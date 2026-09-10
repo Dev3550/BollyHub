@@ -305,10 +305,10 @@ async function initDownloadHubPage() {
   const primaryCleanMirror = cleanMirrors.find(m => m.url.includes('gofile') || m.url.includes('vikingfile') || m.url.includes('megaup') || m.url.includes('mixdrop')) || cleanMirrors[0];
   const secondaryCleanMirror = cleanMirrors.find(m => m !== primaryCleanMirror) || cleanMirrors[1] || cleanMirrors[0];
   
-  // Instant DL URL: Uses direct clean storage locker if available, else fastdl_url engine
-  const instantDlUrl = primaryCleanMirror ? primaryCleanMirror.url : (qualityObj.fastdl_url || `https://dl.fastdlserver.site/?id=${encodeURIComponent(fileId)}&type=file`);
-  // Fast Cloud URL: Uses secondary clean storage locker if available, else primary clean mirror or fastdl_url (NEVER gdflix ad page!)
-  const cloudUrl = secondaryCleanMirror ? secondaryCleanMirror.url : instantDlUrl;
+  // Instant DL URL: Uses fastdl_pages_url (fastdl-one.pages.dev format) for 1-click FastDL
+  const instantDlUrl = qualityObj.fastdl_pages_url || (primaryCleanMirror ? primaryCleanMirror.url : `https://fastdl-one.pages.dev/?url=${encodeURIComponent(`https://dl.fastdlserver.site/?id=${encodeURIComponent(fileId)}&type=file`)}`);
+  // Fast Cloud URL: Uses secondary clean storage locker if available, else primary clean mirror or fastdl_url
+  const cloudUrl = primaryCleanMirror ? primaryCleanMirror.url : (secondaryCleanMirror ? secondaryCleanMirror.url : instantDlUrl);
 
   let mirrorsHtml = '';
   if (mirrors.length > 0) {
