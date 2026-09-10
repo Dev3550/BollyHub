@@ -305,10 +305,15 @@ async function initDownloadHubPage() {
   const primaryCleanMirror = cleanMirrors.find(m => m.url.includes('gofile') || m.url.includes('vikingfile') || m.url.includes('megaup') || m.url.includes('mixdrop')) || cleanMirrors[0];
   const secondaryCleanMirror = cleanMirrors.find(m => m !== primaryCleanMirror) || cleanMirrors[1] || cleanMirrors[0];
   
-  // Instant DL URL: Uses fastdl_pages_url (fastdl-one.pages.dev format) for 1-click FastDL
-  const instantDlUrl = qualityObj.fastdl_pages_url || (primaryCleanMirror ? primaryCleanMirror.url : `https://fastdl-one.pages.dev/?url=${encodeURIComponent(`https://dl.fastdlserver.site/?id=${encodeURIComponent(fileId)}&type=file`)}`);
-  // Fast Cloud URL: Uses secondary clean storage locker if available, else primary clean mirror or fastdl_url
-  const cloudUrl = primaryCleanMirror ? primaryCleanMirror.url : (secondaryCleanMirror ? secondaryCleanMirror.url : instantDlUrl);
+  // Construct 100% Clean FastDL Pages URL (fastdl-one.pages.dev) directly from file_id
+  const rawFastDl = qualityObj.fastdl_url || `https://dl.fastdlserver.site/?id=${encodeURIComponent(fileId)}&type=file`;
+  const fastDlPagesLink = qualityObj.fastdl_pages_url || `https://fastdl-one.pages.dev/?url=${encodeURIComponent(rawFastDl)}`;
+
+  // Instant DL Button: Always opens fastdl-one.pages.dev (Direct 1-Click FastDL)
+  const instantDlUrl = fastDlPagesLink;
+  
+  // Fast Cloud Button: Uses primary clean storage locker (GoFile / VikingFile / MegaUp) if available, else fastDlPagesLink
+  const cloudUrl = primaryCleanMirror ? primaryCleanMirror.url : fastDlPagesLink;
 
   let mirrorsHtml = '';
   if (mirrors.length > 0) {
