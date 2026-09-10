@@ -1,0 +1,24 @@
+{
+  "base_url": "https://bollyflix.af",
+  "concurrency_limit": 10,
+  "request_timeout_seconds": 25,
+  "output_file": "../data/movies.json",
+  "checkpoint_file": "../data/checkpoint_urls.json",
+  "categories": [
+    "https://bollyflix.af/movies/bollywood/",
+    "https://bollyflix.af/movies/hollywood/",
+    "https://bollyflix.af/movies/south-hindi-dubbed/",
+    "https://bollyflix.af/movies/dual-audio-movies/",
+    "https://bollyflix.af/movies/hindi-dubbed-movies-480p-720p/",
+    "https://bollyflix.af/movies/multi-audio/",
+    "https://bollyflix.af/movies/punjabi/",
+    "https://bollyflix.af/movies/bengali/",
+    "https://bollyflix.af/web-series/",
+    "https://bollyflix.af/anime/"
+  ],
+  "headers": {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.9"
+  }
+}

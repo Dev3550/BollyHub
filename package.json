@@ -1,0 +1,14 @@
+{
+  "name": "bollyhub-portal",
+  "version": "1.0.0",
+  "description": "BollyHub Movie Aggregator & Automated FastDL Scraper Engine",
+  "main": "bollyflix_scraper/scraper.js",
+  "scripts": {
+    "start": "node bollyflix_scraper/scraper.js",
+    "scrape": "node bollyflix_scraper/scraper.js"
+  },
+  "dependencies": {
+    "axios": "^1.6.8",
+    "cheerio": "^1.0.0-rc.12"
+  }
+}

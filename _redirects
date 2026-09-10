@@ -1,0 +1,4 @@
+# Clean routes for Cloudflare Pages
+/index.html   /index.html   200
+/movie.html   /movie.html   200
+/download.html /download.html 200

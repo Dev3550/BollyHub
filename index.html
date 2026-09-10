@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BollyHub - Download HD Movies & Web Series (Direct 1-Click FastDL)</title>
+  <meta name="description" content="BollyHub - Download Bollywood, Hollywood, South Hindi Dubbed movies, 480p, 720p, 1080p, 4K Web Series with direct 1-click fast downloads.">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <a href="index.html" class="logo">
+      <span>🎬</span> BollyHub
+    </a>
+    <div class="search-container">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="search-input" class="search-input" placeholder="Search movies, web series, year...">
+    </div>
+  </nav>
+
+  <!-- Category Bar -->
+  <div class="category-bar">
+    <button class="cat-btn active" data-cat="ALL">🔥 All Titles</button>
+    <button class="cat-btn" data-cat="BOLLYWOOD">🎬 Bollywood</button>
+    <button class="cat-btn" data-cat="HOLLYWOOD">🍿 Hollywood</button>
+    <button class="cat-btn" data-cat="SOUTH">⚡ South Hindi</button>
+    <button class="cat-btn" data-cat="DUAL">🌐 Dual Audio</button>
+    <button class="cat-btn" data-cat="WEB SERIES">📺 Web Series</button>
+    <button class="cat-btn" data-cat="ANIME">🎌 Anime</button>
+  </div>
+
+  <!-- Main Catalog Grid -->
+  <main class="main-container">
+    <div class="section-title">
+      <span>⚡</span> Latest Releases & HD Downloads
+    </div>
+
+    <div id="movies-grid" class="movie-grid">
+      <!-- Dynamically filled by app.js -->
+    </div>
+
+    <!-- Responsive Single Row Horizontal Pagination Bar -->
+    <div id="pagination-container" class="pagination-wrapper">
+      <!-- Dynamically rendered by app.js -->
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer>
+    <p>© 2026 BollyHub Engine. All rights reserved. Fast 1-Click Storage Mirrors.</p>
+  </footer>
+
+  <script src="js/app.js"></script>
+</body>
+</html>

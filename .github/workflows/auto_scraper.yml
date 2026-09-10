@@ -1,0 +1,38 @@
+name: Automated BollyHub FastDL Cloud Scraper
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+jobs:
+  scrape-and-update:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code Repository
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js Environment
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Install Scraper Dependencies
+        run: |
+          npm install
+
+      - name: Run BollyHub Automated Multi-Category Scraper
+        run: |
+          node bollyflix_scraper/scraper.js
+
+      - name: Commit and Push Fresh Movie Updates
+        run: |
+          git config --global user.name "BollyHub Auto-Bot"
+          git config --global user.email "bot@bollyhub.app"
+          git add data/movies.json data/checkpoint_urls.json
+          git status
+          git diff-index --quiet HEAD || git commit -m "Auto-update: Scraped new releases & fresh 1-click download links [skip ci]"
+          git push origin main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
