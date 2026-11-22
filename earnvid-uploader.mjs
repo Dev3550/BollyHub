@@ -1,11 +1,70 @@
 // D:\BollyHub\earnvid-uploader.mjs
-// EarnVids Batch Remote Cloud Uploader
-// Uses EarnVids API to download movies cloud-to-cloud and generate monetization embed links
+// BollyHub Automated BollyFlix -> EarnVids Cloud Stream & Download Uploader
+// Resolves BollyFlix FastDL / Google Drive redirects automatically into direct Google CDN video URLs
+// and pushes them directly into your EarnVids monetization account.
+
+import * as cheerio from 'cheerio';
 
 const EARNVIDS_KEY = process.env.EARNVIDS_KEY || '48914lqe3hwneiukt644z';
 
+const headers = {
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+  'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+  'Accept-Language': 'en-US,en;q=0.9'
+};
+
 /**
- * 1. Upload Remote URL to EarnVids
+ * 1. Automatically resolve FastDL / GDFlix link into direct Google CDN stream URL
+ * FastDL -> gdflix.dev -> new10.gdflix.io -> Instant DL -> fastdl-one.pages.dev/?url=...
+ */
+export async function resolveDirectGoogleCdnUrl(fastDlServerUrl) {
+  try {
+    let currentUrl = fastDlServerUrl;
+    let stepCount = 0;
+    while (stepCount < 6) {
+      stepCount++;
+      const res = await fetch(currentUrl, { headers, redirect: 'manual' });
+      if (res.status === 301 || res.status === 302 || res.status === 307 || res.status === 308) {
+        const loc = res.headers.get('location');
+        if (!loc) break;
+        currentUrl = loc.startsWith('http') ? loc : new URL(loc, currentUrl).href;
+      } else if (res.status === 200) {
+        const html = await res.text();
+        const $ = cheerio.load(html);
+        let instadlLink = '';
+        $('a').each((_, a) => {
+          const txt = $(a).text().trim();
+          const href = $(a).attr('href');
+          if (href && (txt.includes('Instant DL') || href.includes('instadl.rest'))) {
+            instadlLink = href;
+          }
+        });
+
+        if (!instadlLink) return null;
+
+        const dlRes = await fetch(instadlLink, {
+          headers: { ...headers, Referer: currentUrl },
+          redirect: 'manual'
+        });
+        const dlLoc = dlRes.headers.get('location');
+        if (dlLoc) {
+          const u = new URL(dlLoc);
+          return u.searchParams.get('url') || dlLoc;
+        }
+        return null;
+      } else {
+        break;
+      }
+    }
+    return null;
+  } catch (err) {
+    console.error('Resolver error:', err.message);
+    return null;
+  }
+}
+
+/**
+ * 2. Upload Direct Remote URL to EarnVids
  */
 export async function uploadRemoteUrl(directVideoUrl, title = '') {
   const url = `https://earnvids.com/api/upload/url?key=${EARNVIDS_KEY}&url=${encodeURIComponent(directVideoUrl)}` + 
@@ -30,7 +89,7 @@ export async function uploadRemoteUrl(directVideoUrl, title = '') {
 }
 
 /**
- * 2. Check Queue Status of active URL uploads
+ * 3. Check Queue Status of active URL uploads
  */
 export async function checkUploadQueue() {
   try {
@@ -44,7 +103,7 @@ export async function checkUploadQueue() {
 }
 
 /**
- * 3. List all processed files in EarnVids account
+ * 4. List all processed files in EarnVids account
  */
 export async function listAccountFiles() {
   try {
@@ -58,56 +117,29 @@ export async function listAccountFiles() {
 }
 
 /**
- * Batch Uploader Demo with 5 Video Links
+ * 5. Clear failed items in upload queue
  */
-async function runBatchUpload() {
-  console.log('🚀 [EarnVids Uploader] Starting batch upload with API Key:', EARNVIDS_KEY);
-
-  // List of direct video URLs to upload (Direct links only - no landing pages/captchas)
-  const moviesToUpload = [
-    {
-      title: "Movie 1: Big Buck Bunny HD",
-      url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
-    },
-    {
-      title: "Movie 2: Elephants Dream HD",
-      url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4"
-    },
-    {
-      title: "Movie 3: For Bigger Blazes HD",
-      url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4"
-    },
-    {
-      title: "Movie 4: For Bigger Escape HD",
-      url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4"
-    },
-    {
-      title: "Movie 5: Tears of Steel HD",
-      url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4"
-    }
-  ];
-
-  console.log(`\n📤 Sending ${moviesToUpload.length} movies to EarnVids Cloud Downloader...`);
-
-  const results = [];
-  for (const m of moviesToUpload) {
-    const filecode = await uploadRemoteUrl(m.url, m.title);
-    if (filecode) {
-      results.push({ title: m.title, filecode, embedUrl: `https://morencius.com/e/${filecode}` });
-    }
-    // Small delay between API calls
-    await new Promise(r => setTimeout(r, 1200));
+export async function deleteQueueErrors() {
+  try {
+    const res = await fetch(`https://earnvids.com/api/file/url_actions?key=${EARNVIDS_KEY}&delete_errors=1`);
+    const data = await res.json();
+    return data;
+  } catch (err) {
+    console.error('Delete queue errors failed:', err.message);
+    return null;
   }
-
-  console.log('\n📊 Checking Active Upload Status on EarnVids Cloud...');
-  await new Promise(r => setTimeout(r, 3000));
-  const queue = await checkUploadQueue();
-  console.log('Current Queue Items:', queue);
-
-  console.log('\n🎉 [Done] All 5 movies have been queued into your EarnVids account!');
-  console.log('Results Summary:');
-  console.table(results);
 }
 
-// Run if called directly
-runBatchUpload();
+// Check status if executed directly
+if (process.argv[1]?.endsWith('earnvid-uploader.mjs')) {
+  console.log('📊 Fetching current EarnVids status...');
+  Promise.all([checkUploadQueue(), listAccountFiles()]).then(([queue, files]) => {
+    console.log(`\nActive Queue (${queue.length}):`, queue);
+    console.log(`\nAccount Files (${files.length}):`, files.map(f => ({
+      file_code: f.file_code,
+      title: f.title,
+      canplay: f.canplay,
+      link: f.link
+    })));
+  });
+}
