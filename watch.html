@@ -183,18 +183,18 @@
     // Known Movie TMDB & IMDb Mapping Registry
     const KNOWN_MOVIE_MAP = {
       'stree-2-sarkate-ka-aatank-2024-hindi-movie': {
-        imdb: 'tt27490075',
-        tmdb: '1114513',
+        imdb: 'tt27510174',
+        tmdb: '1112426',
         defaultTitle: 'Stree 2: Sarkate Ka Aatank (2024)'
       },
       'shaitaan-2024-hindi-movie': {
-        imdb: 'tt27712177',
-        tmdb: '1075073',
+        imdb: 'tt27744786',
+        tmdb: '1187619',
         defaultTitle: 'Shaitaan (2024)'
       },
       'salaar-2023-dual-audio-hindi-telugu-movie': {
-        imdb: 'tt13591456',
-        tmdb: '772071',
+        imdb: 'tt13927994',
+        tmdb: '770906',
         defaultTitle: 'Salaar: Part 1 - Ceasefire (2023)'
       },
       'deadpool-2-2018-dual-audio-hindi-english-movie': {
@@ -204,8 +204,8 @@
       }
     };
 
-    let currentImdbId = 'tt27490075';
-    let currentTmdbId = '1114513';
+    let currentImdbId = 'tt27510174';
+    let currentTmdbId = '1112426';
     let currentActiveServer = 'vidlink';
 
     function getStreamUrl(server, imdbId, tmdbId) {
@@ -241,8 +241,8 @@
       if (!movie) return;
 
       const mapping = KNOWN_MOVIE_MAP[movie.id] || {
-        imdb: (movie.imdb && movie.imdb.title && movie.imdb.title.includes('Stree')) ? 'tt27490075' : 'tt27490075',
-        tmdb: '1114513'
+        imdb: 'tt27510174',
+        tmdb: '1112426'
       };
 
       currentImdbId = mapping.imdb;
