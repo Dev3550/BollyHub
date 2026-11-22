@@ -8,16 +8,61 @@
   <link rel="stylesheet" href="css/style.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <style>
+    :root {
+      --primary-gold: #f59e0b;
+      --accent-purple: #8b5cf6;
+      --bg-color: #070a13;
+      --card-bg: rgba(15, 23, 42, 0.75);
+      --glass-border: rgba(255, 255, 255, 0.08);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      background-image: 
+        radial-gradient(at 10% 15%, rgba(139, 92, 246, 0.12) 0px, transparent 40%),
+        radial-gradient(at 90% 85%, rgba(245, 158, 11, 0.10) 0px, transparent 40%);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      font-family: 'Inter', sans-serif;
+    }
+
+    /* Ambient Dimmer for Lights Off */
+    #cinema-dimmer {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.95);
+      z-index: 85;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.4s ease;
+    }
+    body.lights-off #cinema-dimmer {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
     .cinema-container {
-      max-width: 1200px;
+      width: 100%;
+      max-width: 1140px;
       margin: 20px auto 40px;
       padding: 0 16px;
+      transition: max-width 0.35s ease;
+      position: relative;
     }
+    .cinema-container.theater-mode {
+      max-width: 100%;
+      padding: 0 4px;
+    }
+
     .cinema-header {
       text-align: center;
-      margin-bottom: 24px;
+      margin-bottom: 20px;
     }
     .cinema-header h1 {
       font-size: 28px;
@@ -25,104 +70,154 @@
       background: linear-gradient(135deg, #f59e0b, #ec4899, #8b5cf6);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
+      letter-spacing: -0.3px;
     }
     .cinema-header p {
       color: var(--text-muted);
       font-size: 14px;
     }
+
+    /* Modern Movie Selection Bar */
     .movie-selector-bar {
       display: flex;
       gap: 10px;
       overflow-x: auto;
-      padding: 12px;
-      background: rgba(30, 41, 59, 0.7);
+      padding: 10px;
+      background: rgba(15, 23, 42, 0.85);
       border: 1px solid var(--glass-border);
-      border-radius: var(--radius-md);
-      margin-bottom: 20px;
+      border-radius: 14px;
+      margin-bottom: 18px;
+      backdrop-filter: blur(12px);
     }
     .movie-pill {
       background: rgba(255, 255, 255, 0.05);
       border: 1px solid rgba(255, 255, 255, 0.1);
       color: var(--text-main);
-      padding: 10px 18px;
+      padding: 9px 18px;
       border-radius: 20px;
       font-size: 13px;
       font-weight: 600;
       white-space: nowrap;
       cursor: pointer;
-      display: flex;
+      display: inline-flex;
       align-items: center;
       gap: 8px;
       transition: all 0.2s ease;
+      user-select: none;
     }
     .movie-pill:hover {
       background: rgba(245, 158, 11, 0.2);
       border-color: var(--primary-gold);
+      color: #fff;
     }
     .movie-pill.active {
       background: linear-gradient(135deg, #f59e0b, #d97706);
       color: #000;
       border-color: #f59e0b;
       font-weight: 700;
-      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.35);
+      box-shadow: 0 4px 14px rgba(245, 158, 11, 0.4);
     }
-    .theater-screen {
+
+    /* Video Player Shell */
+    .cinema-player-shell {
+      position: relative;
+      border-radius: 16px;
+      background: #020617;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.85), 0 0 45px -8px rgba(245, 158, 11, 0.22);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      overflow: hidden;
+      z-index: 95;
+      transition: all 0.3s ease;
+    }
+    .theater-mode .cinema-player-shell {
+      border-radius: 8px;
+    }
+    .video-aspect-ratio {
       position: relative;
       width: 100%;
-      padding-top: 56.25%; /* 16:9 */
+      padding-top: 56.25%; /* 16:9 Aspect Ratio */
       background: #000;
-      border-radius: var(--radius-lg);
-      overflow: hidden;
-      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8), 0 0 25px rgba(139, 92, 246, 0.2);
-      border: 1px solid rgba(255, 255, 255, 0.12);
     }
-    .theater-screen iframe {
+    .video-aspect-ratio iframe {
       position: absolute;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
       border: none;
+      display: block;
     }
-    .server-controls {
+
+    /* Quick Action Toolbar */
+    .cinema-toolbar {
       display: flex;
-      justify-content: space-between;
       align-items: center;
+      justify-content: space-between;
       flex-wrap: wrap;
       gap: 12px;
-      margin-top: 16px;
-      padding: 16px;
-      background: rgba(15, 23, 42, 0.8);
+      margin-top: 14px;
+      padding: 12px 18px;
+      background: rgba(15, 23, 42, 0.85);
       border: 1px solid var(--glass-border);
-      border-radius: var(--radius-md);
+      border-radius: 12px;
+      backdrop-filter: blur(12px);
+      z-index: 95;
+      position: relative;
     }
-    .server-buttons {
+    .toolbar-left, .toolbar-right {
       display: flex;
+      align-items: center;
+      gap: 10px;
       flex-wrap: wrap;
-      gap: 8px;
     }
-    .btn-srv {
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      color: var(--text-main);
+    .tool-btn {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #e2e8f0;
       padding: 8px 14px;
       border-radius: 8px;
       font-size: 13px;
       font-weight: 600;
       cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
       transition: all 0.2s ease;
+      user-select: none;
     }
-    .btn-srv:hover {
+    .tool-btn:hover {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: rgba(255, 255, 255, 0.25);
+      color: #fff;
+    }
+    .tool-btn.active {
       background: rgba(245, 158, 11, 0.2);
       border-color: var(--primary-gold);
+      color: var(--primary-gold);
+      box-shadow: 0 0 12px rgba(245, 158, 11, 0.25);
     }
-    .btn-srv.active {
-      background: linear-gradient(135deg, #f59e0b, #d97706);
-      color: #000;
+    .btn-cinema-dl {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: #fff;
+      padding: 10px 22px;
+      border-radius: 8px;
+      font-size: 13px;
       font-weight: 700;
-      border-color: #f59e0b;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 16px rgba(16, 185, 129, 0.35);
+      transition: all 0.2s ease;
+      text-decoration: none;
     }
+    .btn-cinema-dl:hover {
+      filter: brightness(1.12);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 22px rgba(16, 185, 129, 0.5);
+    }
+
+    /* Architecture Explanation Cards */
     .features-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -130,10 +225,11 @@
       margin-top: 30px;
     }
     .feature-card {
-      background: var(--card-bg);
+      background: rgba(15, 23, 42, 0.7);
       border: 1px solid var(--glass-border);
-      border-radius: var(--radius-md);
-      padding: 18px;
+      border-radius: 14px;
+      padding: 20px;
+      backdrop-filter: blur(10px);
     }
     .feature-card h3 {
       font-size: 16px;
@@ -146,27 +242,30 @@
     .feature-card p {
       font-size: 13px;
       color: var(--text-muted);
-      line-height: 1.5;
+      line-height: 1.6;
     }
   </style>
 </head>
 <body>
+
+  <!-- Dimmer for Lights Off -->
+  <div id="cinema-dimmer" onclick="toggleLightsOff()"></div>
 
   <!-- Navbar -->
   <nav class="navbar">
     <a href="index.html" class="logo">
       <span>🎬</span> BollyHub
     </a>
-    <div style="font-size:13px; color:var(--text-muted); display:flex; gap:16px;">
+    <div style="font-size:13px; color:var(--text-muted); display:flex; align-items:center; gap:16px;">
       <a href="watch.html" style="color:var(--primary-gold); font-weight:600;">▶️ Standard Player</a>
       <a href="index.html">← Back to Catalog</a>
     </div>
   </nav>
 
-  <div class="cinema-container">
+  <div class="cinema-container" id="cinema-container">
     <div class="cinema-header">
-      <h1>⚡ Cinema Live Stream Player</h1>
-      <p>Demonstrating Permanent Online Playback without server storage or video downloads.</p>
+      <h1>⚡ Live Cinema Player</h1>
+      <p>Instant high-definition streaming with multi-audio, subtitle tracks, and zero-buffering playback.</p>
     </div>
 
     <!-- Quick Movie Selection Bar -->
@@ -185,30 +284,29 @@
       </div>
     </div>
 
-    <!-- Live Theater Screen -->
-    <div class="theater-screen">
-      <iframe id="cinema-frame" src="https://vidlink.pro/movie/1112426?primaryColor=f59e0b&secondaryColor=8b5cf6" allowfullscreen="true" webkitallowfullscreen="true" mozallowfullscreen="true" scrolling="no"></iframe>
+    <!-- Video Player Shell (Single Working Player - Zero Clutter) -->
+    <div class="cinema-player-shell">
+      <div class="video-aspect-ratio">
+        <iframe id="cinema-iframe" src="https://vidlink.pro/movie/1112426?primaryColor=f59e0b&secondaryColor=8b5cf6&icons=vid&player=default&title=true&poster=true" allowfullscreen="true" webkitallowfullscreen="true" mozallowfullscreen="true" scrolling="no"></iframe>
+      </div>
     </div>
 
-    <!-- Server Controls -->
-    <div class="server-controls">
-      <div class="server-buttons">
-        <span style="font-size:13px; font-weight:700; color:#fbbf24; display:flex; align-items:center; margin-right:8px;">
-          Streaming Server:
-        </span>
-        <button class="btn-srv active" onclick="setCinemaServer('vidlink', this)">
-          🟢 Server 1: VidLink Pro (Fastest)
+    <!-- Cinema Toolbar (Standard OTT Experience) -->
+    <div class="cinema-toolbar">
+      <div class="toolbar-left">
+        <button class="tool-btn" id="btn-theater" onclick="toggleTheaterMode()" title="Toggle Wide Cinema Screen">
+          <span>⛶</span> Theater Mode
         </button>
-        <button class="btn-srv" onclick="setCinemaServer('vidsrc', this)">
-          ⚡ Server 2: VidSrc Cloud
+        <button class="tool-btn" id="btn-lights" onclick="toggleLightsOff()" title="Dim page for theater view">
+          <span>🌙</span> Lights Off
         </button>
-        <button class="btn-srv" onclick="setCinemaServer('2embed', this)">
-          🛡️ Server 3: SuperEmbed / 2Embed
+        <button class="tool-btn" onclick="reloadPlayer()" title="Reload Player Stream">
+          <span>🔄</span> Reload Stream
         </button>
       </div>
-      <div>
-        <a id="btn-goto-dl" href="download.html?id=stree-2-sarkate-ka-aatank-2024-hindi-movie" class="btn-dl" style="padding:8px 18px; font-size:13px;">
-          📥 Download Options
+      <div class="toolbar-right">
+        <a id="btn-goto-dl" href="download.html?id=stree-2-sarkate-ka-aatank-2024-hindi-movie" class="btn-cinema-dl">
+          📥 Download Full Movie (480p • 720p • 1080p)
         </a>
       </div>
     </div>
@@ -217,15 +315,15 @@
     <div class="features-grid">
       <div class="feature-card">
         <h3><span>🚀</span> Zero Server Storage</h3>
-        <p>Videos are streamed directly through distributed edge streaming servers. Your site hosts 0 MB of video files, keeping hosting costs at ₹0.</p>
+        <p>Videos are streamed directly through high-speed edge distribution. Your site hosts 0 MB of video files, keeping server infrastructure costs at ₹0.</p>
       </div>
       <div class="feature-card">
-        <h3><span>⚡</span> 100% Permanent Streams</h3>
-        <p>Unlike 2-hour expiring download tokens, these API stream endpoints resolve fresh video chunks dynamically on every playback session.</p>
+        <h3><span>⚡</span> 100% Permanent Playback</h3>
+        <p>Unlike 2-hour expiring download tokens, this player resolves fresh video chunks dynamically on every playback session with 99.9% uptime.</p>
       </div>
       <div class="feature-card">
         <h3><span>🎧</span> Multi-Audio & Subtitles</h3>
-        <p>Integrated players support on-the-fly Hindi/English audio track switching and multiple subtitle tracks right inside the player settings.</p>
+        <p>Integrated player supports on-the-fly Hindi/English audio track switching and multiple subtitle tracks right inside the player settings.</p>
       </div>
     </div>
   </div>
@@ -264,42 +362,51 @@
     };
 
     let activeMovieKey = 'stree2';
-    let activeServerKey = 'vidlink';
 
-    function getCinemaUrl(movieKey, serverKey) {
-      const m = MOVIES[movieKey];
-      if (!m) return '';
-      switch (serverKey) {
-        case 'vidlink':
-          return `https://vidlink.pro/movie/${m.tmdb}?primaryColor=f59e0b&secondaryColor=8b5cf6`;
-        case 'vidsrc':
-          return `https://vidsrc.pm/embed/movie/${m.imdb}`;
-        case '2embed':
-          return `https://2embed.cc/embed/${m.imdb}`;
-        default:
-          return `https://vidlink.pro/movie/${m.tmdb}`;
-      }
+    function getStreamUrl(tmdbId) {
+      return `https://vidlink.pro/movie/${tmdbId}?primaryColor=f59e0b&secondaryColor=8b5cf6&icons=vid&player=default&title=true&poster=true`;
     }
 
-    function updatePlayer() {
-      const frame = document.getElementById('cinema-frame');
-      frame.src = getCinemaUrl(activeMovieKey, activeServerKey);
-      const dlBtn = document.getElementById('btn-goto-dl');
-      dlBtn.href = `download.html?id=${encodeURIComponent(MOVIES[activeMovieKey].bollyId)}`;
-    }
-
-    function loadMovie(movieKey, el) {
+    function loadMovie(movieKey, element) {
       activeMovieKey = movieKey;
-      document.querySelectorAll('.movie-pill').forEach(p => p.classList.remove('active'));
-      el.classList.add('active');
-      updatePlayer();
+      const movie = MOVIES[movieKey];
+      if (!movie) return;
+
+      document.querySelectorAll('.movie-pill').forEach(pill => pill.classList.remove('active'));
+      if (element) element.classList.add('active');
+
+      const iframe = document.getElementById('cinema-iframe');
+      iframe.src = getStreamUrl(movie.tmdb);
+
+      const dlBtn = document.getElementById('btn-goto-dl');
+      dlBtn.href = `download.html?id=${encodeURIComponent(movie.bollyId)}`;
     }
 
-    function setCinemaServer(serverKey, el) {
-      activeServerKey = serverKey;
-      document.querySelectorAll('.btn-srv').forEach(b => b.classList.remove('active'));
-      el.classList.add('active');
-      updatePlayer();
+    function toggleTheaterMode() {
+      const container = document.getElementById('cinema-container');
+      const btn = document.getElementById('btn-theater');
+      container.classList.toggle('theater-mode');
+      const isWide = container.classList.contains('theater-mode');
+      btn.classList.toggle('active', isWide);
+      btn.innerHTML = isWide ? '<span>⛶</span> Exit Theater' : '<span>⛶</span> Theater Mode';
+    }
+
+    function toggleLightsOff() {
+      const body = document.body;
+      const btn = document.getElementById('btn-lights');
+      body.classList.toggle('lights-off');
+      const isDimmed = body.classList.contains('lights-off');
+      btn.classList.toggle('active', isDimmed);
+      btn.innerHTML = isDimmed ? '<span>💡</span> Lights On' : '<span>🌙</span> Lights Off';
+    }
+
+    function reloadPlayer() {
+      const iframe = document.getElementById('cinema-iframe');
+      if (iframe) {
+        const curSrc = iframe.src;
+        iframe.src = '';
+        setTimeout(() => { iframe.src = curSrc; }, 100);
+      }
     }
   </script>
 </body>
