@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cinema Player Demo - BollyHub Live Online Streaming</title>
+  <meta name="description" content="Experience instant movie playback with multi-audio, subtitle selection, and zero buffer streaming on BollyHub.">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    .cinema-container {
+      max-width: 1200px;
+      margin: 20px auto 40px;
+      padding: 0 16px;
+    }
+    .cinema-header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    .cinema-header h1 {
+      font-size: 28px;
+      font-weight: 800;
+      background: linear-gradient(135deg, #f59e0b, #ec4899, #8b5cf6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 8px;
+    }
+    .cinema-header p {
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+    .movie-selector-bar {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      padding: 12px;
+      background: rgba(30, 41, 59, 0.7);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-md);
+      margin-bottom: 20px;
+    }
+    .movie-pill {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: var(--text-main);
+      padding: 10px 18px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      white-space: nowrap;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+    }
+    .movie-pill:hover {
+      background: rgba(245, 158, 11, 0.2);
+      border-color: var(--primary-gold);
+    }
+    .movie-pill.active {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: #000;
+      border-color: #f59e0b;
+      font-weight: 700;
+      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.35);
+    }
+    .theater-screen {
+      position: relative;
+      width: 100%;
+      padding-top: 56.25%; /* 16:9 */
+      background: #000;
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8), 0 0 25px rgba(139, 92, 246, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+    .theater-screen iframe {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+    .server-controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 16px;
+      padding: 16px;
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-md);
+    }
+    .server-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .btn-srv {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: var(--text-main);
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .btn-srv:hover {
+      background: rgba(245, 158, 11, 0.2);
+      border-color: var(--primary-gold);
+    }
+    .btn-srv.active {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: #000;
+      font-weight: 700;
+      border-color: #f59e0b;
+    }
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+      margin-top: 30px;
+    }
+    .feature-card {
+      background: var(--card-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-md);
+      padding: 18px;
+    }
+    .feature-card h3 {
+      font-size: 16px;
+      color: var(--primary-gold);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .feature-card p {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <a href="index.html" class="logo">
+      <span>🎬</span> BollyHub
+    </a>
+    <div style="font-size:13px; color:var(--text-muted); display:flex; gap:16px;">
+      <a href="watch.html" style="color:var(--primary-gold); font-weight:600;">▶️ Standard Player</a>
+      <a href="index.html">← Back to Catalog</a>
+    </div>
+  </nav>
+
+  <div class="cinema-container">
+    <div class="cinema-header">
+      <h1>⚡ Cinema Live Stream Player</h1>
+      <p>Demonstrating Permanent Online Playback without server storage or video downloads.</p>
+    </div>
+
+    <!-- Quick Movie Selection Bar -->
+    <div class="movie-selector-bar">
+      <div class="movie-pill active" onclick="loadMovie('stree2', this)">
+        <span>👻</span> Stree 2 (2024) [Hindi HD]
+      </div>
+      <div class="movie-pill" onclick="loadMovie('salaar', this)">
+        <span>⚔️</span> Salaar: Part 1 (2023) [Hindi-Telugu]
+      </div>
+      <div class="movie-pill" onclick="loadMovie('shaitaan', this)">
+        <span>👹</span> Shaitaan (2024) [Hindi HD]
+      </div>
+      <div class="movie-pill" onclick="loadMovie('deadpool2', this)">
+        <span>💥</span> Deadpool 2 (2018) [Dual Audio]
+      </div>
+    </div>
+
+    <!-- Live Theater Screen -->
+    <div class="theater-screen">
+      <iframe id="cinema-frame" src="https://vidlink.pro/movie/1114513?primaryColor=f59e0b&secondaryColor=8b5cf6" allowfullscreen="true" webkitallowfullscreen="true" mozallowfullscreen="true" scrolling="no"></iframe>
+    </div>
+
+    <!-- Server Controls -->
+    <div class="server-controls">
+      <div class="server-buttons">
+        <span style="font-size:13px; font-weight:700; color:#fbbf24; display:flex; align-items:center; margin-right:8px;">
+          Streaming Server:
+        </span>
+        <button class="btn-srv active" onclick="setCinemaServer('vidlink', this)">
+          🟢 Server 1: VidLink Pro (Fastest)
+        </button>
+        <button class="btn-srv" onclick="setCinemaServer('vidsrc', this)">
+          ⚡ Server 2: VidSrc Cloud
+        </button>
+        <button class="btn-srv" onclick="setCinemaServer('2embed', this)">
+          🛡️ Server 3: SuperEmbed / 2Embed
+        </button>
+      </div>
+      <div>
+        <a id="btn-goto-dl" href="download.html?id=stree-2-sarkate-ka-aatank-2024-hindi-movie" class="btn-dl" style="padding:8px 18px; font-size:13px;">
+          📥 Download Options
+        </a>
+      </div>
+    </div>
+
+    <!-- Architecture Explanation Cards -->
+    <div class="features-grid">
+      <div class="feature-card">
+        <h3><span>🚀</span> Zero Server Storage</h3>
+        <p>Videos are streamed directly through distributed edge streaming servers. Your site hosts 0 MB of video files, keeping hosting costs at ₹0.</p>
+      </div>
+      <div class="feature-card">
+        <h3><span>⚡</span> 100% Permanent Streams</h3>
+        <p>Unlike 2-hour expiring download tokens, these API stream endpoints resolve fresh video chunks dynamically on every playback session.</p>
+      </div>
+      <div class="feature-card">
+        <h3><span>🎧</span> Multi-Audio & Subtitles</h3>
+        <p>Integrated players support on-the-fly Hindi/English audio track switching and multiple subtitle tracks right inside the player settings.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    <p>© 2026 BollyHub Engine. Automated Permanent Video Streaming Architecture.</p>
+  </footer>
+
+  <script>
+    const MOVIES = {
+      'stree2': {
+        tmdb: '1114513',
+        imdb: 'tt27490075',
+        title: 'Stree 2 (2024)',
+        bollyId: 'stree-2-sarkate-ka-aatank-2024-hindi-movie'
+      },
+      'salaar': {
+        tmdb: '772071',
+        imdb: 'tt13591456',
+        title: 'Salaar: Part 1 (2023)',
+        bollyId: 'salaar-2023-dual-audio-hindi-telugu-movie'
+      },
+      'shaitaan': {
+        tmdb: '1075073',
+        imdb: 'tt27712177',
+        title: 'Shaitaan (2024)',
+        bollyId: 'shaitaan-2024-hindi-movie'
+      },
+      'deadpool2': {
+        tmdb: '383498',
+        imdb: 'tt5463162',
+        title: 'Deadpool 2 (2018)',
+        bollyId: 'deadpool-2-2018-dual-audio-hindi-english-movie'
+      }
+    };
+
+    let activeMovieKey = 'stree2';
+    let activeServerKey = 'vidlink';
+
+    function getCinemaUrl(movieKey, serverKey) {
+      const m = MOVIES[movieKey];
+      if (!m) return '';
+      switch (serverKey) {
+        case 'vidlink':
+          return `https://vidlink.pro/movie/${m.tmdb}?primaryColor=f59e0b&secondaryColor=8b5cf6`;
+        case 'vidsrc':
+          return `https://vidsrc.pm/embed/movie/${m.imdb}`;
+        case '2embed':
+          return `https://2embed.cc/embed/${m.imdb}`;
+        default:
+          return `https://vidlink.pro/movie/${m.tmdb}`;
+      }
+    }
+
+    function updatePlayer() {
+      const frame = document.getElementById('cinema-frame');
+      frame.src = getCinemaUrl(activeMovieKey, activeServerKey);
+      const dlBtn = document.getElementById('btn-goto-dl');
+      dlBtn.href = `download.html?id=${encodeURIComponent(MOVIES[activeMovieKey].bollyId)}`;
+    }
+
+    function loadMovie(movieKey, el) {
+      activeMovieKey = movieKey;
+      document.querySelectorAll('.movie-pill').forEach(p => p.classList.remove('active'));
+      el.classList.add('active');
+      updatePlayer();
+    }
+
+    function setCinemaServer(serverKey, el) {
+      activeServerKey = serverKey;
+      document.querySelectorAll('.btn-srv').forEach(b => b.classList.remove('active'));
+      el.classList.add('active');
+      updatePlayer();
+    }
+  </script>
+</body>
+</html>

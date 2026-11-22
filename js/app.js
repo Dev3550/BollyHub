@@ -267,6 +267,21 @@ async function initDetailPage() {
           <strong>Storyline:</strong> ${cleanText(movie.imdb?.summary) || 'No storyline summary available.'}
         </div>
 
+        <!-- Online Streaming CTA Banner -->
+        <div style="margin: 22px 0; padding: 18px; background: linear-gradient(135deg, rgba(139, 92, 246, 0.22), rgba(245, 158, 11, 0.16)); border: 1px solid rgba(245, 158, 11, 0.45); border-radius: 12px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+          <div>
+            <div style="color: #fbbf24; font-size: 18px; font-weight: 700; display:flex; align-items:center; gap:8px;">
+              <span>▶️</span> Watch Online (Full HD Live Stream)
+            </div>
+            <div style="color: #94a3b8; font-size: 13px; margin-top: 4px;">
+              Stream instantly in your browser without downloading • Multi-Audio & Subtitles included.
+            </div>
+          </div>
+          <a href="watch.html?id=${encodeURIComponent(movie.id)}" class="btn-dl" style="background: linear-gradient(135deg, #f59e0b, #ef4444); color: #fff; font-size: 15px; font-weight: 700; padding: 12px 24px; border-radius: 8px; text-decoration: none; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4); display: inline-flex; align-items: center; gap: 8px;">
+            ▶️ Play Online Now
+          </a>
+        </div>
+
         <div class="download-section">
           <h3 style="margin-bottom:16px;">📥 Download Options (~ BollyHub)</h3>
           ${qualitiesHtml || '<div style="color:#94a3b8;">No download qualities available for this title.</div>'}
