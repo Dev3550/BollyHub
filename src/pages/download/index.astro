@@ -1,0 +1,22 @@
+---
+// Redirect /download?id=slug to clean /download/[slug]/
+---
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Redirecting - BollyHub FastDL</title>
+  <script is:inline>
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('id');
+    if (id) {
+      window.location.replace('/download/' + encodeURIComponent(id) + '/');
+    } else {
+      window.location.replace('/');
+    }
+  </script>
+</head>
+<body>
+  <p>Redirecting to BollyHub FastDL... <a href="/">Click here if not redirected</a>.</p>
+</body>
+</html>

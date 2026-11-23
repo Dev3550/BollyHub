@@ -42,14 +42,15 @@ jobs:
         run: |
           node cloud_earnvid_uploader.cjs
           node sync_live_uploaded_movies.cjs
+          npm run build
 
       - name: Commit and Push Upload Results & Checkpoints
         run: |
           git config --global user.name "BollyHub Cloud Bot"
           git config --global user.email "bot@bollyhub.app"
-          git add data/earnvid_uploaded_checkpoint.json data/earnvid_movies_uploaded.json data/movies.json
+          git add data/earnvid_uploaded_checkpoint.json data/earnvid_movies_uploaded.json data/movies.json public/data/movies.json dist/
           git status
-          git diff-index --quiet HEAD || git commit -m "Cloud Upload Update: Pushed new movies to EarnVids & synced catalog"
+          git diff-index --quiet HEAD || git commit -m "Cloud Upload Update: Pushed new movies to EarnVids & rebuilt Astro SSG static catalog [skip ci]"
           git push origin main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

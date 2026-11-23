@@ -1,0 +1,22 @@
+---
+// Redirect /movie?id=slug to clean /movie/[slug]/
+---
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Redirecting - BollyHub</title>
+  <script is:inline>
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('id');
+    if (id) {
+      window.location.replace('/movie/' + encodeURIComponent(id) + '/');
+    } else {
+      window.location.replace('/');
+    }
+  </script>
+</head>
+<body>
+  <p>Redirecting to BollyHub... <a href="/">Click here if not redirected</a>.</p>
+</body>
+</html>

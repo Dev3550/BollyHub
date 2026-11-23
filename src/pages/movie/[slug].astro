@@ -1,0 +1,159 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import fs from 'node:fs';
+import path from 'node:path';
+
+export async function getStaticPaths() {
+  const moviesDataPath = path.resolve('./data/movies.json');
+  let movies: any[] = [];
+  try {
+    movies = JSON.parse(fs.readFileSync(moviesDataPath, 'utf-8'));
+  } catch (e) {
+    movies = [];
+  }
+
+  return movies.map((movie) => ({
+    params: { slug: movie.slug || movie.id },
+    props: { movie }
+  }));
+}
+
+const { movie } = Astro.props;
+
+function cleanText(text: string) {
+  if (!text) return '';
+  return text.replace(/BollyFlix/gi, 'BollyHub').replace(/bollyflix/gi, 'bollyhub').trim();
+}
+
+function getFastPosterUrl(posterUrl: string) {
+  if (posterUrl && posterUrl.startsWith('http') && !posterUrl.includes('vlcsnap') && !posterUrl.includes('screenshot')) {
+    return posterUrl;
+  }
+  return 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=500&auto=format&fit=crop&q=60';
+}
+
+const cleanTitle = cleanText(movie.title);
+const fastPoster = getFastPosterUrl(movie.poster_url);
+const category = movie.categories && movie.categories[0] ? movie.categories[0] : 'Bollywood';
+const fileCode = movie.earnvid_filecode || (movie.qualities && movie.qualities[0] && movie.qualities[0].filecode) || '3m71g7vk5t0j';
+const slug = movie.slug || movie.id;
+
+const pageTitle = `${cleanTitle} - BollyHub HD Download & Stream`;
+const pageDescription = `Download ${cleanTitle} in 480p, 720p, 1080p Full HD with 1-click fast direct download links and high-speed live stream on BollyHub.`;
+---
+
+<Layout
+  title={pageTitle}
+  description={pageDescription}
+  image={fastPoster}
+  canonicalUrl={`https://bollyhub.devendradubey61.workers.dev/movie/${slug}/`}
+  movie={movie}
+>
+  <main class="main-container">
+    <!-- Breadcrumbs -->
+    <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">
+      <a href="/" style="color: var(--text-muted);">Home</a>
+      <span style="opacity: 0.4;">›</span>
+      <a href={`/?cat=${encodeURIComponent(category)}`} style="color: var(--text-muted);">{category}</a>
+      <span style="opacity: 0.4;">›</span>
+      <span style="color: #f1f5f9; font-weight: 600;">{cleanTitle}</span>
+    </div>
+
+    <!-- Movie Details Container -->
+    <div class="detail-container">
+      <div class="detail-poster">
+        <img src={fastPoster} alt={cleanTitle} />
+      </div>
+
+      <div class="detail-info">
+        <h1>{cleanTitle}</h1>
+        
+        <div class="meta-tags">
+          <span class="tag">📅 {movie.release_year || '2024'}</span>
+          {(movie.categories || []).map((c: string) => (
+            <span class="tag highlight">{c}</span>
+          ))}
+        </div>
+
+        <div class="imdb-box">
+          <div class="imdb-title">⭐ IMDb Rating: {movie.imdb?.rating || '8.0'} / 10</div>
+          <div><strong>Director:</strong> {movie.imdb?.director || 'N/A'}</div>
+          <div><strong>Cast:</strong> {(movie.imdb?.cast || []).join(', ') || 'N/A'}</div>
+          <div><strong>Genres:</strong> {movie.imdb?.genres || 'Action, Thriller, Drama'}</div>
+        </div>
+
+        <div class="storyline">
+          <strong>Storyline:</strong> {cleanText(movie.imdb?.summary) || 'No storyline summary available.'}
+        </div>
+
+        <!-- Online Streaming CTA Banner -->
+        <div style="margin: 22px 0; padding: 20px; background: linear-gradient(135deg, rgba(139, 92, 246, 0.22), rgba(245, 158, 11, 0.16)); border: 1px solid rgba(245, 158, 11, 0.45); border-radius: 12px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+          <div>
+            <div style="color: #fbbf24; font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+              <span>▶️</span> Watch Online (Full HD Live Cinema)
+            </div>
+            <div style="color: #94a3b8; font-size: 13px; margin-top: 4px;">
+              Stream instantly in your browser without downloading • Multi-Audio & Subtitles included.
+            </div>
+          </div>
+          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <a href={`/watch/${slug}/`} class="btn-dl" style="background: linear-gradient(135deg, #f59e0b, #ef4444); color: #fff; font-size: 14px; font-weight: 700; padding: 12px 24px; border-radius: 8px; text-decoration: none; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4); display: inline-flex; align-items: center; gap: 8px;">
+              ▶️ Play Cinema Player
+            </a>
+            <a href={`https://morencius.com/file/${fileCode}`} target="_blank" class="btn-dl" style="background: linear-gradient(135deg, #10b981, #059669); color: #fff; font-size: 14px; font-weight: 700; padding: 12px 20px; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
+              🚀 Direct Cloud Player
+            </a>
+          </div>
+        </div>
+
+        <!-- Download Section -->
+        <div class="download-section">
+          <h3 style="margin-bottom: 16px;">📥 Download Options (~ BollyHub FastDL)</h3>
+          {movie.qualities && movie.qualities.length > 0 ? (
+            movie.qualities.map((q: any) => {
+              const cleanQName = cleanText(q.quality_name || 'HD WEB-DL');
+              const qCode = q.filecode || q.file_id || fileCode;
+              return (
+                <div class="quality-box">
+                  <div class="quality-title">{cleanQName}</div>
+                  <div class="btn-group">
+                    <a href={`https://morencius.com/d/${qCode}`} target="_blank" class="btn-dl">
+                      🚀 Direct 1-Click FastDL
+                    </a>
+                    <a href={`/download/${slug}/`} class="btn-dl secondary">
+                      📁 Download Hub
+                    </a>
+                  </div>
+                </div>
+              );
+            })
+          ) : (
+            <div class="quality-box">
+              <div class="quality-title">{cleanTitle} - Full HD</div>
+              <div class="btn-group">
+                <a href={`https://morencius.com/d/${fileCode}`} target="_blank" class="btn-dl">
+                  🚀 Direct 1-Click FastDL
+                </a>
+                <a href={`/download/${slug}/`} class="btn-dl secondary">
+                  📁 Download Hub
+                </a>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <!-- Screenshots -->
+        {movie.screenshots && movie.screenshots.length > 0 && (
+          <div style="margin-top: 28px;">
+            <h3 style="margin-bottom: 14px;">📸 High-Definition Screenshots</h3>
+            <div class="screenshots-grid">
+              {movie.screenshots.map((img: string) => (
+                <img src={getFastPosterUrl(img)} alt="Screenshot" loading="lazy" decoding="async" />
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  </main>
+</Layout>

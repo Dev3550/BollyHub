@@ -1,0 +1,128 @@
+---
+interface Props {
+  title?: string;
+  description?: string;
+  image?: string;
+  canonicalUrl?: string;
+  movie?: any;
+}
+
+const {
+  title = "BollyHub - Download HD Movies & Watch Online (Direct 1-Click FastDL)",
+  description = "BollyHub - Watch & Download Bollywood, Hollywood, South Hindi Dubbed movies, 480p, 720p, 1080p Web Series with direct 1-click fast downloads.",
+  image = "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=1200&auto=format&fit=crop&q=80",
+  canonicalUrl = "https://bollyhub.devendradubey61.workers.dev",
+  movie = null
+} = Astro.props;
+
+// Schema.org structured data for instantaneous Google Crawling & Rich Snippets
+const schemaData = movie ? {
+  "@context": "https://schema.org",
+  "@type": "Movie",
+  "name": movie.title,
+  "image": movie.poster_url || image,
+  "datePublished": movie.release_year,
+  "genre": movie.imdb?.genres ? movie.imdb.genres.split(',').map((g: string) => g.trim()) : (movie.categories || ["Action"]),
+  "description": movie.imdb?.summary || description,
+  "director": {
+    "@type": "Person",
+    "name": movie.imdb?.director || "N/A"
+  },
+  "actor": (movie.imdb?.cast || []).map((actorName: string) => ({
+    "@type": "Person",
+    "name": actorName
+  })),
+  "aggregateRating": {
+    "@type": "AggregateRating",
+    "ratingValue": movie.imdb?.rating || "8.0",
+    "bestRating": "10",
+    "ratingCount": "2500"
+  }
+} : {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "BollyHub",
+  "url": "https://bollyhub.devendradubey61.workers.dev/",
+  "potentialAction": {
+    "@type": "SearchAction",
+    "target": "https://bollyhub.devendradubey61.workers.dev/?q={search_term_string}",
+    "query-input": "required name=search_term_string"
+  }
+};
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{title}</title>
+  <meta name="description" content={description} />
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+
+  <!-- OpenGraph Metadata -->
+  <meta property="og:locale" content="en_US" />
+  <meta property="og:type" content={movie ? "video.movie" : "website"} />
+  <meta property="og:title" content={title} />
+  <meta property="og:description" content={description} />
+  <meta property="og:image" content={image} />
+  <meta property="og:site_name" content="BollyHub" />
+
+  <!-- Twitter Card Metadata -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content={title} />
+  <meta name="twitter:description" content={description} />
+  <meta name="twitter:image" content={image} />
+
+  <!-- Google SEO Structured Data (JSON-LD) -->
+  <script type="application/ld+json" set:html={JSON.stringify(schemaData)} />
+
+  <!-- Fonts & Stylesheet -->
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+  <!-- Global Sticky Navbar -->
+  <nav class="navbar">
+    <a href="/" class="logo">
+      <span>🎬</span> BollyHub
+    </a>
+    <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+      <a href="/watch/leo-2023/" style="font-size: 13px; font-weight: 700; color: #fbbf24; background: rgba(245, 158, 11, 0.15); padding: 6px 14px; border-radius: 8px; border: 1px solid rgba(245, 158, 11, 0.4);">
+        ▶️ Watch Online
+      </a>
+      <a href="/watch/oppenheimer-2023/" style="font-size: 13px; font-weight: 700; color: #c084fc; background: rgba(139, 92, 246, 0.15); padding: 6px 14px; border-radius: 8px; border: 1px solid rgba(139, 92, 246, 0.4);">
+        ⚡ Cinema Player
+      </a>
+      <div class="search-container">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="search-input" class="search-input" placeholder="Search movies, series, year..." />
+      </div>
+    </div>
+  </nav>
+
+  <!-- Page Content Slot -->
+  <slot />
+
+  <!-- Global Footer -->
+  <footer>
+    <p>© 2026 BollyHub Engine. High-Speed Permanent Web Streaming & 1-Click Fast Storage Mirrors.</p>
+  </footer>
+
+  <script is:inline>
+    // Global search handler: if on detail/watch page, redirect to home with query
+    const searchInput = document.getElementById('search-input');
+    if (searchInput && window.location.pathname !== '/') {
+      searchInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          const q = searchInput.value.trim();
+          if (q) window.location.href = '/?q=' + encodeURIComponent(q);
+        }
+      });
+    }
+  </script>
+</body>
+</html>

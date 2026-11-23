@@ -1,15 +1,16 @@
 {
   "name": "bollyhub-portal",
   "version": "1.0.0",
-  "description": "BollyHub Movie Aggregator & Automated FastDL Scraper Engine",
-  "main": "bollyflix_scraper/scraper.js",
+  "description": "BollyHub Movie Aggregator & FastDL Engine built with Astro SSG",
   "scripts": {
-    "build": "echo \"BollyHub Static Build Completed\"",
-    "start": "node serve.mjs",
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
     "scrape": "node bollyflix_scraper/scraper.js",
     "sync": "node sync_live_uploaded_movies.cjs"
   },
   "dependencies": {
+    "astro": "^7.4.13",
     "axios": "^1.6.8",
     "cheerio": "^1.0.0-rc.12"
   }

@@ -1,0 +1,142 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import fs from 'node:fs';
+import path from 'node:path';
+
+export async function getStaticPaths() {
+  const moviesDataPath = path.resolve('./data/movies.json');
+  let movies: any[] = [];
+  try {
+    movies = JSON.parse(fs.readFileSync(moviesDataPath, 'utf-8'));
+  } catch (e) {
+    movies = [];
+  }
+
+  return movies.map((movie) => ({
+    params: { slug: movie.slug || movie.id },
+    props: { movie }
+  }));
+}
+
+const { movie } = Astro.props;
+
+function cleanText(text: string) {
+  if (!text) return '';
+  return text.replace(/BollyFlix/gi, 'BollyHub').replace(/bollyflix/gi, 'bollyhub').trim();
+}
+
+function getFastPosterUrl(posterUrl: string) {
+  if (posterUrl && posterUrl.startsWith('http') && !posterUrl.includes('vlcsnap') && !posterUrl.includes('screenshot')) {
+    return posterUrl;
+  }
+  return 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=500&auto=format&fit=crop&q=60';
+}
+
+const cleanTitle = cleanText(movie.title);
+const fastPoster = getFastPosterUrl(movie.poster_url);
+const category = movie.categories && movie.categories[0] ? movie.categories[0] : 'Bollywood';
+const fileCode = movie.earnvid_filecode || (movie.qualities && movie.qualities[0] && movie.qualities[0].filecode) || '3m71g7vk5t0j';
+const slug = movie.slug || movie.id;
+
+const instantDlUrl = `https://morencius.com/d/${fileCode}`;
+const cloudUrl = `https://morencius.com/file/${fileCode}`;
+
+const qualities = movie.qualities && movie.qualities.length > 0 ? movie.qualities : [
+  {
+    quality_name: 'Full HD 1080p WEB-DL',
+    filecode: fileCode,
+    file_id: fileCode
+  }
+];
+
+const pageTitle = `Download ${cleanTitle} FastDL - BollyHub 1-Click Engine`;
+const pageDescription = `Direct 1-click fast download for ${cleanTitle}. Verified high-speed mirrors and cloud storage on BollyHub.`;
+---
+
+<Layout
+  title={pageTitle}
+  description={pageDescription}
+  image={fastPoster}
+  canonicalUrl={`https://bollyhub.devendradubey61.workers.dev/download/${slug}/`}
+  movie={movie}
+>
+  <main class="main-container">
+    <!-- Breadcrumbs -->
+    <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">
+      <a href="/" style="color: var(--text-muted);">Home</a>
+      <span style="opacity: 0.4;">›</span>
+      <a href={`/movie/${slug}/`} style="color: var(--text-muted);">{cleanTitle}</a>
+      <span style="opacity: 0.4;">›</span>
+      <span style="color: #f1f5f9; font-weight: 600;">Download Hub</span>
+    </div>
+
+    <!-- Download Hub Box -->
+    <div class="download-hub" style="max-width: 760px; margin: 0 auto; background: rgba(15, 23, 42, 0.75); border: 1px solid var(--glass-border); border-radius: 16px; padding: 28px; backdrop-filter: blur(12px); box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+      <h2 style="font-size: 22px; font-weight: 800; color: #fff; text-align: center; margin-bottom: 20px;">
+        📁 File Information (~ BollyHub Engine)
+      </h2>
+
+      <div class="file-info-card" style="background: rgba(30, 41, 59, 0.65); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 18px; margin-bottom: 24px;">
+        <h3 style="font-size: 18px; font-weight: 700; color: #fbbf24; margin-bottom: 12px;">{cleanTitle}</h3>
+        <div style="display: flex; justify-content: space-between; font-size: 13px; padding: 6px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.05); color: #cbd5e1;">
+          <span style="color: var(--text-muted);">Year / Category:</span>
+          <strong>{movie.release_year || '2024'} • {category}</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 13px; padding: 6px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.05); color: #cbd5e1;">
+          <span style="color: var(--text-muted);">IMDb Rating:</span>
+          <strong style="color: #fbbf24;">⭐ {movie.imdb?.rating || '8.0'} / 10</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 13px; padding: 6px 0; color: #cbd5e1;">
+          <span style="color: var(--text-muted);">Server Mirror:</span>
+          <strong style="color: #10b981;">⚡ EarnVids High-Speed CDN</strong>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="hub-actions" style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px;">
+        <a href={instantDlUrl} target="_blank" class="btn-instant" style="background: linear-gradient(135deg, #10b981, #059669); color: #fff; font-weight: 800; font-size: 15px; padding: 14px 20px; border-radius: 10px; text-align: center; text-decoration: none; box-shadow: 0 4px 18px rgba(16, 185, 129, 0.35); display: flex; align-items: center; justify-content: center; gap: 8px;">
+          ⚡ INSTANT DIRECT DL [1-CLICK NO ADS]
+        </a>
+        <a href={cloudUrl} target="_blank" class="btn-cloud" style="background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: #fff; font-weight: 700; font-size: 14px; padding: 12px 20px; border-radius: 10px; text-align: center; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 8px;">
+          ☁️ BOLLYHUB FAST CLOUD SERVER
+        </a>
+        <a href={`/watch/${slug}/`} class="btn-watch" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: #000; font-weight: 700; font-size: 14px; padding: 12px 20px; border-radius: 10px; text-align: center; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 8px;">
+          ▶️ STREAM ONLINE (NO DOWNLOAD NEEDED)
+        </a>
+      </div>
+
+      <!-- Verified Storage Mirrors -->
+      <div style="margin-top: 24px;">
+        <h3 style="font-size: 15px; font-weight: 700; margin-bottom: 12px; color: #cbd5e1;">
+          ⚡ Verified Multi-Quality Direct Storage Mirrors:
+        </h3>
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          {qualities.map((q: any) => {
+            const qCode = q.filecode || q.file_id || fileCode;
+            const qTitle = cleanText(q.quality_name || 'HD WEB-DL');
+            return (
+              <div style="background: rgba(30, 41, 59, 0.7); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+                <div>
+                  <div style="font-size: 13px; font-weight: 700; color: #fff;">{qTitle}</div>
+                  <div style="font-size: 11px; color: #10b981; margin-top: 2px;">⚡ Verified Direct 1-Click FastDL</div>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                  <a href={`https://morencius.com/d/${qCode}`} target="_blank" style="background: linear-gradient(135deg, #10b981, #059669); color: #fff; font-size: 12px; font-weight: 700; padding: 8px 14px; border-radius: 6px; text-decoration: none;">
+                    📥 Download
+                  </a>
+                  <a href={`https://morencius.com/file/${qCode}`} target="_blank" style="background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15); color: #cbd5e1; font-size: 12px; font-weight: 600; padding: 8px 12px; border-radius: 6px; text-decoration: none;">
+                    🚀 Stream
+                  </a>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <p style="font-size: 12px; color: #64748b; margin-top: 22px; text-align: center;">
+        Note: Click "INSTANT DIRECT DL" or any verified storage mirror above for 1-Click Fast Downloads (~ BollyHub Engine).
+      </p>
+    </div>
+  </main>
+</Layout>

@@ -1,0 +1,232 @@
+---
+import Layout from '../layouts/Layout.astro';
+import fs from 'node:fs';
+import path from 'node:path';
+
+// Read verified movies database at build time (SSG - Pre-rendered Static HTML)
+const moviesDataPath = path.resolve('./data/movies.json');
+let movies: any[] = [];
+try {
+  const raw = fs.readFileSync(moviesDataPath, 'utf-8');
+  movies = JSON.parse(raw);
+} catch (e) {
+  movies = [];
+}
+
+function cleanText(text: string) {
+  if (!text) return '';
+  return text.replace(/BollyFlix/gi, 'BollyHub').replace(/bollyflix/gi, 'bollyhub').trim();
+}
+
+function getFastPosterUrl(posterUrl: string) {
+  if (posterUrl && posterUrl.startsWith('http') && !posterUrl.includes('vlcsnap') && !posterUrl.includes('screenshot')) {
+    return posterUrl;
+  }
+  return 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=500&auto=format&fit=crop&q=60';
+}
+---
+
+<Layout
+  title="BollyHub - Download HD Movies & Watch Online (Direct 1-Click FastDL)"
+  description="Download Bollywood, Hollywood, South Hindi Dubbed movies in 480p, 720p, 1080p, 4K Web Series with 1-click direct fast downloads."
+>
+  <!-- Category Bar -->
+  <div class="category-bar">
+    <button class="cat-btn active" data-cat="ALL">🔥 All Titles</button>
+    <button class="cat-btn" data-cat="BOLLYWOOD">🎬 Bollywood</button>
+    <button class="cat-btn" data-cat="HOLLYWOOD">🍿 Hollywood</button>
+    <button class="cat-btn" data-cat="SOUTH">⚡ South Hindi</button>
+    <button class="cat-btn" data-cat="DUAL">🌐 Dual Audio</button>
+    <button class="cat-btn" data-cat="WEB SERIES">📺 Web Series</button>
+    <button class="cat-btn" data-cat="ANIME">🎌 Anime</button>
+  </div>
+
+  <!-- Main Catalog Grid (100% Pre-rendered HTML for Google SEO Indexing) -->
+  <main class="main-container">
+    <div class="section-title">
+      <span>⚡</span> Latest Releases & HD Downloads
+      <span style="font-size: 13px; font-weight: 500; color: #94a3b8; margin-left: auto;">
+        Showing <strong id="total-count-display" style="color: #fbbf24;">{movies.length}</strong> verified titles
+      </span>
+    </div>
+
+    <!-- Movie Grid: Static HTML initially, interactive on client -->
+    <div id="movies-grid" class="movie-grid">
+      {movies.map((m) => {
+        const cleanTitle = cleanText(m.title);
+        const poster = getFastPosterUrl(m.poster_url);
+        const categoryTag = m.categories && m.categories[0] ? m.categories[0] : 'HD';
+        const rating = m.imdb?.rating || '8.0';
+        const year = m.release_year || '2024';
+        const slug = m.slug || m.id;
+
+        return (
+          <div class="movie-card-wrapper" data-categories={JSON.stringify(m.categories || [])} data-title={cleanTitle.toLowerCase()} data-year={year}>
+            <a href={`/movie/${slug}/`} class="movie-card">
+              <div class="card-poster">
+                <img src={poster} alt={cleanTitle} loading="lazy" decoding="async" />
+                <span class="card-badge">{categoryTag}</span>
+              </div>
+              <div class="card-info">
+                <div class="card-title">{cleanTitle}</div>
+                <div class="card-meta">
+                  <span>📅 {year}</span>
+                  <span>⭐ {rating}</span>
+                </div>
+              </div>
+            </a>
+            <div style="padding: 0 10px 10px; display: flex; gap: 6px;">
+              <a href={`/watch/${slug}/`} class="btn-quick-watch" style="flex: 1; text-align: center; font-size: 11px; font-weight: 700; background: linear-gradient(135deg, #f59e0b, #d97706); color: #000; padding: 6px 8px; border-radius: 6px; text-decoration: none;">
+                ▶️ Watch
+              </a>
+              <a href={`/download/${slug}/`} class="btn-quick-dl" style="flex: 1; text-align: center; font-size: 11px; font-weight: 700; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15); color: #cbd5e1; padding: 6px 8px; border-radius: 6px; text-decoration: none;">
+                📥 FastDL
+              </a>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+
+    <!-- Responsive Single Row Horizontal Pagination Bar -->
+    <div id="pagination-container" class="pagination-wrapper"></div>
+  </main>
+
+  <script is:inline>
+    // Client-side Instant Filter & Pagination
+    (function() {
+      const cards = Array.from(document.querySelectorAll('.movie-card-wrapper'));
+      const searchInput = document.getElementById('search-input');
+      const catButtons = document.querySelectorAll('.cat-btn');
+      const totalDisplay = document.getElementById('total-count-display');
+      const paginationContainer = document.getElementById('pagination-container');
+
+      let currentCategory = 'ALL';
+      let currentQuery = '';
+      let currentPage = 1;
+
+      function getPageSize() {
+        return window.innerWidth <= 768 ? 12 : 24;
+      }
+
+      function applyFilters() {
+        let matching = cards.filter(card => {
+          const title = card.getAttribute('data-title') || '';
+          const year = card.getAttribute('data-year') || '';
+          let cats = [];
+          try {
+            cats = JSON.parse(card.getAttribute('data-categories') || '[]');
+          } catch(e) {}
+
+          const matchesCat = currentCategory === 'ALL' || cats.some(c => c.toUpperCase().includes(currentCategory));
+          const matchesQuery = !currentQuery || title.includes(currentQuery) || year.includes(currentQuery) || cats.some(c => c.toLowerCase().includes(currentQuery));
+
+          return matchesCat && matchesQuery;
+        });
+
+        if (totalDisplay) totalDisplay.textContent = matching.length;
+
+        // Render Pagination
+        const pageSize = getPageSize();
+        const totalPages = Math.ceil(matching.length / pageSize) || 1;
+        currentPage = Math.min(Math.max(1, currentPage), totalPages);
+
+        cards.forEach(c => c.style.display = 'none');
+
+        const startIdx = (currentPage - 1) * pageSize;
+        const pageItems = matching.slice(startIdx, startIdx + pageSize);
+        pageItems.forEach(c => c.style.display = '');
+
+        renderPagination(totalPages);
+      }
+
+      function renderPagination(totalPages) {
+        if (!paginationContainer) return;
+        if (totalPages <= 1) {
+          paginationContainer.innerHTML = '';
+          return;
+        }
+
+        let html = '';
+        if (currentPage > 1) {
+          html += `<button class="page-btn" data-page="${currentPage - 1}">« Prev</button>`;
+        } else {
+          html += `<button class="page-btn disabled">« Prev</button>`;
+        }
+
+        const maxButtons = 5;
+        let startPage = Math.max(1, currentPage - Math.floor(maxButtons / 2));
+        let endPage = startPage + maxButtons - 1;
+        if (endPage > totalPages) {
+          endPage = totalPages;
+          startPage = Math.max(1, endPage - maxButtons + 1);
+        }
+
+        if (startPage > 1) {
+          html += `<button class="page-btn" data-page="1">1</button>`;
+          if (startPage > 2) html += `<span class="page-dots">...</span>`;
+        }
+
+        for (let i = startPage; i <= endPage; i++) {
+          if (i === currentPage) {
+            html += `<button class="page-btn active">${i}</button>`;
+          } else {
+            html += `<button class="page-btn" data-page="${i}">${i}</button>`;
+          }
+        }
+
+        if (endPage < totalPages) {
+          if (endPage < totalPages - 1) html += `<span class="page-dots">...</span>`;
+          html += `<button class="page-btn" data-page="${totalPages}">${totalPages}</button>`;
+        }
+
+        if (currentPage < totalPages) {
+          html += `<button class="page-btn" data-page="${currentPage + 1}">Next »</button>`;
+        } else {
+          html += `<button class="page-btn disabled">Next »</button>`;
+        }
+
+        paginationContainer.innerHTML = html;
+        paginationContainer.querySelectorAll('.page-btn[data-page]').forEach(b => {
+          b.addEventListener('click', () => {
+            currentPage = parseInt(b.getAttribute('data-page'), 10);
+            applyFilters();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          });
+        });
+      }
+
+      // Check URL query parameters (e.g. /?q=leo)
+      const urlParams = new URLSearchParams(window.location.search);
+      const qParam = urlParams.get('q');
+      if (qParam && searchInput) {
+        searchInput.value = qParam;
+        currentQuery = qParam.toLowerCase().trim();
+      }
+
+      // Listeners
+      if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+          currentQuery = e.target.value.toLowerCase().trim();
+          currentPage = 1;
+          applyFilters();
+        });
+      }
+
+      catButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          catButtons.forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          currentCategory = btn.getAttribute('data-cat') || 'ALL';
+          currentPage = 1;
+          applyFilters();
+        });
+      });
+
+      window.addEventListener('resize', () => applyFilters());
+
+      // Initial run
+      applyFilters();
+    })();
+  </script>
+</Layout>

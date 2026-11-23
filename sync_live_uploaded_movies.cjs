@@ -286,9 +286,13 @@ async function syncLiveCatalog() {
     console.log(`  -> Added: ${imdb.title} (${imdb.year}) | ★ ${imdb.rating} | Cat: ${categories[0]} | Files: ${qualities.length}`);
   }
 
-  // 4. Save to data/movies.json
+  // 4. Save to data/movies.json and public/data/movies.json
   const outputPath = path.join(__dirname, 'data', 'movies.json');
   fs.writeFileSync(outputPath, JSON.stringify(catalog, null, 2), 'utf8');
+
+  const publicDataDir = path.join(__dirname, 'public', 'data');
+  if (!fs.existsSync(publicDataDir)) fs.mkdirSync(publicDataDir, { recursive: true });
+  fs.writeFileSync(path.join(publicDataDir, 'movies.json'), JSON.stringify(catalog, null, 2), 'utf8');
 
   console.log('\n===============================================================');
   console.log(`✅ Success! Saved ${catalog.length} live uploaded movies to: ${outputPath}`);

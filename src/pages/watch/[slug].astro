@@ -1,0 +1,639 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import fs from 'node:fs';
+import path from 'node:path';
+
+export async function getStaticPaths() {
+  const moviesDataPath = path.resolve('./data/movies.json');
+  let movies: any[] = [];
+  try {
+    movies = JSON.parse(fs.readFileSync(moviesDataPath, 'utf-8'));
+  } catch (e) {
+    movies = [];
+  }
+
+  return movies.map((movie) => ({
+    params: { slug: movie.slug || movie.id },
+    props: { movie }
+  }));
+}
+
+const { movie } = Astro.props;
+
+function cleanText(text: string) {
+  if (!text) return '';
+  return text.replace(/BollyFlix/gi, 'BollyHub').replace(/bollyflix/gi, 'bollyhub').trim();
+}
+
+function getFastPosterUrl(posterUrl: string) {
+  if (posterUrl && posterUrl.startsWith('http') && !posterUrl.includes('vlcsnap') && !posterUrl.includes('screenshot')) {
+    return posterUrl;
+  }
+  return 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=500&auto=format&fit=crop&q=60';
+}
+
+const cleanTitle = cleanText(movie.title);
+const fastPoster = getFastPosterUrl(movie.poster_url);
+const category = movie.categories && movie.categories[0] ? movie.categories[0] : 'Bollywood';
+const fileCode = movie.earnvid_filecode || (movie.qualities && movie.qualities[0] && movie.qualities[0].filecode) || '3m71g7vk5t0j';
+const embedUrl = `https://morencius.com/embed/${fileCode}`;
+const directStreamUrl = `https://morencius.com/file/${fileCode}`;
+const directDlUrl = `https://morencius.com/d/${fileCode}`;
+const slug = movie.slug || movie.id;
+
+const pageTitle = `Watch ${cleanTitle} Online Free - BollyHub Live Cinema`;
+const pageDescription = `Watch ${cleanTitle} online in High Definition with multi-audio and instant playback on BollyHub. Direct 1-click fast streaming.`;
+---
+
+<Layout
+  title={pageTitle}
+  description={pageDescription}
+  image={fastPoster}
+  canonicalUrl={`https://bollyhub.devendradubey61.workers.dev/watch/${slug}/`}
+  movie={movie}
+>
+  <style>
+    /* Ambient Dimmer for Lights Off */
+    #cinema-dimmer {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.95);
+      z-index: 85;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.4s ease;
+    }
+    :global(body.lights-off) #cinema-dimmer {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .cinema-container {
+      width: 100%;
+      max-width: 1140px;
+      margin: 16px auto 40px;
+      padding: 0 16px;
+      transition: max-width 0.35s ease;
+      position: relative;
+    }
+    .cinema-container.theater-mode {
+      max-width: 100%;
+      padding: 0 4px;
+    }
+
+    .cinema-breadcrumbs {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 14px;
+    }
+    .cinema-breadcrumbs a:hover {
+      color: var(--primary-gold);
+    }
+    .cinema-breadcrumbs span.sep {
+      opacity: 0.4;
+    }
+
+    .cinema-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .cinema-title-wrap h1 {
+      font-size: 22px;
+      font-weight: 800;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      letter-spacing: -0.3px;
+      line-height: 1.3;
+    }
+
+    .live-stream-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      color: #34d399;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 20px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .live-stream-badge .dot {
+      width: 6px;
+      height: 6px;
+      background: #10b981;
+      border-radius: 50%;
+      box-shadow: 0 0 8px #10b981;
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(1.3); }
+    }
+
+    .cinema-meta-badges {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .meta-badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 5px 11px;
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .badge-gold {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.22), rgba(217, 119, 6, 0.32));
+      border: 1px solid rgba(245, 158, 11, 0.45);
+      color: #fbbf24;
+    }
+    .badge-purple {
+      background: linear-gradient(135deg, rgba(139, 92, 246, 0.22), rgba(124, 58, 237, 0.32));
+      border: 1px solid rgba(139, 92, 246, 0.45);
+      color: #c084fc;
+    }
+    .badge-imdb {
+      background: rgba(234, 179, 8, 0.15);
+      border: 1px solid rgba(234, 179, 8, 0.35);
+      color: #fde047;
+    }
+
+    .audio-lang-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 12px;
+      padding: 10px 16px;
+      background: rgba(15, 23, 42, 0.88);
+      border: 1px solid var(--glass-border);
+      border-radius: 12px;
+      backdrop-filter: blur(12px);
+      z-index: 95;
+      position: relative;
+    }
+    .lang-selector-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .lang-label {
+      font-size: 13px;
+      font-weight: 700;
+      color: #fbbf24;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .lang-pill {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      border: 1px solid #f59e0b;
+      color: #000;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 4px 14px rgba(245, 158, 11, 0.4);
+    }
+    .lang-tip {
+      font-size: 12px;
+      color: #94a3b8;
+    }
+
+    .cinema-player-shell {
+      position: relative;
+      border-radius: 16px;
+      background: #020617;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.85), 0 0 45px -8px rgba(245, 158, 11, 0.22);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      overflow: hidden;
+      z-index: 95;
+      transition: all 0.3s ease;
+    }
+    .video-aspect-ratio {
+      position: relative;
+      width: 100%;
+      padding-top: 56.25%; /* 16:9 Aspect Ratio */
+      background: #000;
+    }
+    .video-aspect-ratio iframe {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
+    }
+
+    .cinema-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 14px;
+      padding: 12px 18px;
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid var(--glass-border);
+      border-radius: 12px;
+      backdrop-filter: blur(12px);
+      z-index: 95;
+      position: relative;
+    }
+    .toolbar-left, .toolbar-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .tool-btn {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #e2e8f0;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+      user-select: none;
+      text-decoration: none;
+    }
+    .tool-btn:hover {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: rgba(255, 255, 255, 0.25);
+      color: #fff;
+    }
+    .btn-cinema-dl {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: #fff;
+      padding: 10px 22px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 16px rgba(16, 185, 129, 0.35);
+      transition: all 0.2s ease;
+      text-decoration: none;
+    }
+    .btn-cinema-dl:hover {
+      filter: brightness(1.12);
+      transform: translateY(-2px);
+    }
+
+    .movie-detail-card {
+      margin-top: 28px;
+      background: rgba(15, 23, 42, 0.72);
+      border: 1px solid var(--glass-border);
+      border-radius: 16px;
+      padding: 24px;
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      gap: 28px;
+      backdrop-filter: blur(14px);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+    @media (max-width: 768px) {
+      .movie-detail-card {
+        grid-template-columns: 1fr;
+        padding: 18px;
+      }
+    }
+    .movie-poster-wrap img {
+      width: 100%;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.7);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      display: block;
+    }
+    .movie-info-wrap h2 {
+      font-size: 24px;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 10px;
+    }
+    .movie-meta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+    }
+    .crew-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .crew-pill {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      color: #cbd5e1;
+    }
+    .storyline-box {
+      background: rgba(30, 41, 59, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      padding: 14px 18px;
+      border-radius: 10px;
+      font-size: 14px;
+      line-height: 1.6;
+      color: #cbd5e1;
+      margin-bottom: 22px;
+    }
+    .storyline-box strong {
+      color: #fbbf24;
+      display: block;
+      margin-bottom: 4px;
+    }
+    .dl-section-header {
+      font-size: 16px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .qualities-download-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+    }
+    .quality-download-card {
+      background: rgba(30, 41, 59, 0.65);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 12px;
+      transition: all 0.2s ease;
+    }
+    .quality-download-card:hover {
+      background: rgba(30, 41, 59, 0.95);
+      border-color: rgba(245, 158, 11, 0.45);
+      transform: translateY(-2px);
+    }
+    .q-name {
+      font-size: 13px;
+      font-weight: 700;
+      color: #fff;
+    }
+    .q-action-btn {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: #000;
+      font-weight: 700;
+      font-size: 12px;
+      padding: 9px 12px;
+      border-radius: 6px;
+      text-align: center;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      text-decoration: none;
+    }
+  </style>
+
+  <!-- Ambient Dimmer for Lights Off -->
+  <div id="cinema-dimmer"></div>
+
+  <!-- Cinema Container -->
+  <main class="cinema-container" id="cinema-container">
+
+    <!-- Breadcrumbs -->
+    <div class="cinema-breadcrumbs">
+      <a href="/">Home</a>
+      <span class="sep">›</span>
+      <a href={`/?cat=${encodeURIComponent(category)}`}>{category}</a>
+      <span class="sep">›</span>
+      <span style="color:#f1f5f9; font-weight:600;">{cleanTitle}</span>
+    </div>
+
+    <!-- Header Title & Badges -->
+    <div class="cinema-header">
+      <div class="cinema-title-wrap">
+        <h1>
+          <span>▶️ {cleanTitle}</span>
+        </h1>
+        <div style="margin-top:6px;">
+          <span class="live-stream-badge">
+            <span class="dot"></span> 100% Live Stream Active
+          </span>
+        </div>
+      </div>
+      <div class="cinema-meta-badges">
+        <span class="meta-badge badge-gold">⚡ 1080p Ultra HD</span>
+        <span class="meta-badge badge-purple">🎧 Hindi Multi-Audio</span>
+        <span class="meta-badge badge-imdb">⭐ IMDb {movie.imdb?.rating || '8.0'}</span>
+      </div>
+    </div>
+
+    <!-- High-Speed Live Player Bar (Strict EarnVids Revenue) -->
+    <div class="audio-lang-bar">
+      <div class="lang-selector-group">
+        <span class="lang-label">⚡ Stream Server:</span>
+        <span class="lang-pill">
+          <span>🎬</span> EarnVids Cloud HD Player
+        </span>
+      </div>
+      <div class="lang-tip">
+        <span>⚡ <strong>EarnVids HD Active</strong> • Click ⚙️ in player for Audio/Quality or click "Open Fullscreen EarnVids Player" for direct view.</span>
+      </div>
+    </div>
+
+    <!-- Video Player Shell -->
+    <div class="cinema-player-shell">
+      <div class="video-aspect-ratio">
+        <iframe
+          id="cinema-iframe"
+          src={embedUrl}
+          frameborder="0"
+          allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+          allowfullscreen="true"
+          webkitallowfullscreen="true"
+          mozallowfullscreen="true"
+          scrolling="no"
+        ></iframe>
+      </div>
+    </div>
+
+    <!-- Cinema Toolbar -->
+    <div class="cinema-toolbar">
+      <div class="toolbar-left">
+        <button class="tool-btn" id="btn-theater">
+          <span>⛶</span> Theater Mode
+        </button>
+        <button class="tool-btn" id="btn-lights">
+          <span>🌙</span> Lights Off
+        </button>
+        <button class="tool-btn" id="btn-reload">
+          <span>🔄</span> Reload Stream
+        </button>
+      </div>
+      <div class="toolbar-right">
+        <a href={directStreamUrl} target="_blank" class="tool-btn" style="background: linear-gradient(135deg, #10b981, #059669); color: #fff; font-weight: 700; border: none;">
+          <span>🚀</span> Open Fullscreen EarnVids Player
+        </a>
+        <a href={directDlUrl} target="_blank" class="btn-cinema-dl">
+          📥 Download Full Movie (FastDL)
+        </a>
+      </div>
+    </div>
+
+    <!-- Movie Detail Card Below Player -->
+    <div class="movie-detail-card">
+      <div class="movie-poster-wrap">
+        <img src={fastPoster} alt={cleanTitle} />
+      </div>
+      <div class="movie-info-wrap">
+        <h2>{cleanTitle}</h2>
+        <div class="movie-meta-row">
+          <span>📅 Release: <strong>{movie.release_year || '2024'}</strong></span>
+          <span>⭐ IMDb: <strong>{movie.imdb?.rating || '8.0'} / 10</strong></span>
+          <span>🎬 Director: <strong>{movie.imdb?.director || 'N/A'}</strong></span>
+          <span>🏷️ Category: <strong>{category}</strong></span>
+        </div>
+
+        {movie.imdb?.cast && movie.imdb.cast.length > 0 && (
+          <div class="crew-pills">
+            <span class="crew-pill"><strong style="color: #fbbf24;">Cast:</strong></span>
+            {movie.imdb.cast.map((actor: string) => (
+              <span class="crew-pill">{actor}</span>
+            ))}
+          </div>
+        )}
+
+        <div class="storyline-box">
+          <strong>📖 Storyline Overview</strong>
+          {cleanText(movie.imdb?.summary) || 'Watch this movie in high definition with multi-audio online on BollyHub without any video buffering.'}
+        </div>
+
+        <div>
+          <div class="dl-section-header">
+            <span>📥</span> Direct Quality Fast Downloads (EarnVids Engine):
+          </div>
+          <div class="qualities-download-grid">
+            {movie.qualities && movie.qualities.length > 0 ? (
+              movie.qualities.map((q: any) => {
+                const qTitle = cleanText(q.quality_name || 'HD WEB-DL');
+                const qCode = q.filecode || q.file_id || fileCode;
+                const sizeMatch = qTitle.match(/\[(.*?)\]/);
+                const sizeText = sizeMatch ? sizeMatch[1] : 'Direct DL';
+                return (
+                  <div class="quality-download-card">
+                    <div>
+                      <div class="q-name">{qTitle}</div>
+                      <div style="font-size:11px; color:#10b981; margin-top:4px;">⚡ 1-Click Fast Direct DL (EarnVids)</div>
+                    </div>
+                    <a href={`https://morencius.com/d/${qCode}`} target="_blank" class="q-action-btn">
+                      📥 Download ({sizeText})
+                    </a>
+                  </div>
+                );
+              })
+            ) : (
+              <div class="quality-download-card">
+                <div>
+                  <div class="q-name">{cleanTitle} - Full HD</div>
+                  <div style="font-size:11px; color:#10b981; margin-top:4px;">⚡ 1-Click Fast Direct DL (EarnVids)</div>
+                </div>
+                <a href={directDlUrl} target="_blank" class="q-action-btn">
+                  📥 Download Full HD
+                </a>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div style="margin-top: 20px;">
+          <a href={`/download/${slug}/`} style="display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: #fbbf24; background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.35); padding: 8px 16px; border-radius: 8px; text-decoration: none;">
+            📁 Open Dedicated FastDL Download Hub →
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Screenshots Gallery (if available) -->
+    {movie.screenshots && movie.screenshots.length > 0 && (
+      <div style="margin-top: 28px; background: rgba(15, 23, 42, 0.72); border: 1px solid var(--glass-border); border-radius: 16px; padding: 24px;">
+        <h3 style="font-size: 18px; font-weight: 700; color: #fff; margin-bottom: 16px;">📸 High-Definition Screenshots</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px;">
+          {movie.screenshots.map((img: string) => (
+            <img src={getFastPosterUrl(img)} alt="Screenshot" loading="lazy" style="width: 100%; height: 160px; object-fit: cover; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.08);" />
+          ))}
+        </div>
+      </div>
+    )}
+
+  </main>
+
+  <script is:inline>
+    // Cinema UI Controls
+    const dimmer = document.getElementById('cinema-dimmer');
+    const container = document.getElementById('cinema-container');
+    const btnTheater = document.getElementById('btn-theater');
+    const btnLights = document.getElementById('btn-lights');
+    const btnReload = document.getElementById('btn-reload');
+    const iframe = document.getElementById('cinema-iframe');
+
+    if (btnTheater && container) {
+      btnTheater.addEventListener('click', () => {
+        container.classList.toggle('theater-mode');
+        const isWide = container.classList.contains('theater-mode');
+        btnTheater.classList.toggle('active', isWide);
+        btnTheater.innerHTML = isWide ? '<span>⛶</span> Exit Theater' : '<span>⛶</span> Theater Mode';
+      });
+    }
+
+    if (btnLights && dimmer) {
+      function toggleLights() {
+        document.body.classList.toggle('lights-off');
+        const isDimmed = document.body.classList.contains('lights-off');
+        btnLights.classList.toggle('active', isDimmed);
+        btnLights.innerHTML = isDimmed ? '<span>💡</span> Lights On' : '<span>🌙</span> Lights Off';
+      }
+      btnLights.addEventListener('click', toggleLights);
+      dimmer.addEventListener('click', toggleLights);
+    }
+
+    if (btnReload && iframe) {
+      btnReload.addEventListener('click', () => {
+        const curSrc = iframe.src;
+        iframe.src = '';
+        setTimeout(() => { iframe.src = curSrc; }, 100);
+      });
+    }
+  </script>
+</Layout>

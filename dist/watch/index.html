@@ -1,0 +1,9 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Redirecting to Cinema Player - BollyHub</title><script>
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('id');
+    if (id) {
+      window.location.replace('/watch/' + encodeURIComponent(id) + '/');
+    } else {
+      window.location.replace('/watch/leo-2023/');
+    }
+  </script></head><body><p>Redirecting to BollyHub Cinema Player... <a href="/watch/leo-2023/">Click here if not redirected</a>.</p></body></html>
