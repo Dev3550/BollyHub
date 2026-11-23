@@ -30,9 +30,13 @@ jobs:
         run: |
           git config --global user.name "BollyHub Auto-Bot"
           git config --global user.email "bot@bollyhub.app"
-          git add data/movies.json data/checkpoint_urls.json
+          git add -A
           git status
-          git diff-index --quiet HEAD || git commit -m "Auto-update: Scraped new releases & fresh 1-click download links [skip ci]"
-          git push origin main
+          if ! git diff --cached --quiet; then
+            git commit -m "Auto-update: Scraped new releases & fresh 1-click download links [skip ci]"
+            git push origin main
+          else
+            echo "No changes staged to commit."
+          fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

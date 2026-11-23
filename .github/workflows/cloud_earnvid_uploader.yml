@@ -48,9 +48,13 @@ jobs:
         run: |
           git config --global user.name "BollyHub Cloud Bot"
           git config --global user.email "bot@bollyhub.app"
-          git add data/earnvid_uploaded_checkpoint.json data/earnvid_movies_uploaded.json data/master_uploaded_movies_log.json data/MASTER_UPLOADED_MOVIES.md data/movies.json public/data/movies.json dist/
+          git add -A
           git status
-          git diff-index --quiet HEAD || git commit -m "Cloud Upload Update: Pushed new movies to EarnVids & rebuilt Astro SSG static catalog"
-          git push origin main
+          if ! git diff --cached --quiet; then
+            git commit -m "Cloud Upload Update: Pushed new movies to EarnVids & rebuilt Astro SSG static catalog"
+            git push origin main
+          else
+            echo "No changes staged to commit."
+          fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
