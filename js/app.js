@@ -317,13 +317,15 @@ async function initDownloadHubPage() {
   // Filter out any gdflix / fastdlserver URLs from mirrors to ensure 100% clean direct locker URLs
   const cleanMirrors = mirrors.filter(m => m.url && !m.url.includes('gdflix') && !m.url.includes('fastdlserver'));
 
-  const primaryCleanMirror = cleanMirrors.find(m => m.url.includes('gofile') || m.url.includes('vikingfile') || m.url.includes('megaup') || m.url.includes('mixdrop')) || cleanMirrors[0];
+  const fastDlPagesLink = qualityObj.embed_url || movie.embed_url || (movie.earnvid_filecode ? `https://earnvids.com/${movie.earnvid_filecode}` : '#');
+
+  const primaryCleanMirror = cleanMirrors.find(m => m.url.includes('earnvids') || m.url.includes('morencius') || m.url.includes('gofile') || m.url.includes('vikingfile') || m.url.includes('megaup') || m.url.includes('mixdrop')) || cleanMirrors[0];
   const secondaryCleanMirror = cleanMirrors.find(m => m !== primaryCleanMirror) || cleanMirrors[1] || cleanMirrors[0];
   
-  // Instant DL Button: Uses 1-click clean storage locker (GoFile / VikingFile / MegaUp) to guarantee NO GDFlix redirect, else fastDlPagesLink
+  // Instant DL Button: Uses 1-click clean storage locker (EarnVids / GoFile / MegaUp)
   const instantDlUrl = primaryCleanMirror ? primaryCleanMirror.url : fastDlPagesLink;
   
-  // Fast Cloud Button: Uses secondary clean storage locker if available, else primary clean mirror
+  // Fast Cloud Button: Uses secondary clean storage locker if available, else primary
   const cloudUrl = secondaryCleanMirror ? secondaryCleanMirror.url : (primaryCleanMirror ? primaryCleanMirror.url : fastDlPagesLink);
 
   let mirrorsHtml = '';

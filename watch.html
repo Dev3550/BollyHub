@@ -627,8 +627,9 @@
     let currentImdbId = 'tt27510174';
     let currentAudioLang = 'hindi';
     let hindiStreamIndex = 0;
+    let currentMovie = null;
 
-    // Multiple Stream Mirrors ensuring authentic playback across 16,000+ movies
+    // Multiple Stream Mirrors ensuring authentic playback across movies
     const HINDI_STREAM_URLS = [
       (tmdb, imdb) => `https://vidsrc.pm/embed/movie/${imdb}`, // VidSrc Cloud (Indian stream mirror with native Hindi audio track)
       (tmdb, imdb) => `https://2embed.cc/embed/${imdb}`, // 2Embed Indian Mirror (Accepts IMDb ID)
@@ -638,14 +639,18 @@
 
     function getStreamUrl(lang, tmdbId, imdbId) {
       if (lang === 'hindi') {
-        return HINDI_STREAM_URLS[hindiStreamIndex](tmdbId, imdbId);
+        if (currentMovie && currentMovie.embed_url && hindiStreamIndex === 0) {
+          return currentMovie.embed_url;
+        }
+        const mirrorIdx = (currentMovie && currentMovie.embed_url) ? hindiStreamIndex - 1 : hindiStreamIndex;
+        return HINDI_STREAM_URLS[Math.abs(mirrorIdx) % HINDI_STREAM_URLS.length](tmdbId, imdbId);
       } else {
         // Pure English original audio stream (supports IMDb ID as well)
         return `https://vidsrc.pm/embed/movie/${imdbId}`;
       }
     }
 
-    // Dynamic Title & Year Parser for automatic 16,000 movie resolution
+    // Dynamic Title & Year Parser for automatic movie resolution
     function parseTitleAndYear(rawTitle) {
       const yearMatch = rawTitle.match(/\b(19\d\d|20\d\d)\b/);
       const year = yearMatch ? parseInt(yearMatch[1], 10) : null;
@@ -664,7 +669,7 @@
       return { cleanTitle: clean, searchQuery, year };
     }
 
-    // Instant Free Public IMDb ID Resolver (Works for all 16,000 catalog titles dynamically)
+    // Instant Free Public IMDb ID Resolver
     async function resolveImdbIdDynamically(searchQuery, year) {
       if (!searchQuery) return null;
       try {
@@ -714,14 +719,16 @@
     }
 
     function cycleHindiStream() {
-      hindiStreamIndex = (hindiStreamIndex + 1) % HINDI_STREAM_URLS.length;
+      const maxMirrors = (currentMovie && currentMovie.embed_url ? 1 : 0) + HINDI_STREAM_URLS.length;
+      hindiStreamIndex = (hindiStreamIndex + 1) % maxMirrors;
       const iframe = document.getElementById('cinema-iframe');
       if (iframe) {
         iframe.src = getStreamUrl('hindi', currentTmdbId, currentImdbId);
       }
       const tip = document.getElementById('audio-tip-text');
       if (tip) {
-        tip.innerHTML = `<span>🔄 <strong>Switched to Hindi Mirror #${hindiStreamIndex + 1}</strong> • If default is still English, use player ⚙️ audio track settings.</span>`;
+        const mirrorName = (currentMovie && currentMovie.embed_url && hindiStreamIndex === 0) ? 'BollyHub High-Speed Stream' : `OTT Mirror #${hindiStreamIndex}`;
+        tip.innerHTML = `<span>🔄 <strong>Switched to ${mirrorName}</strong> • If default is still English, use player ⚙️ audio track settings.</span>`;
       }
     }
 
@@ -760,12 +767,16 @@
       const movie = movies.find(m => m.id === movieId) || movies.find(m => m.id.includes('stree-2')) || movies[0];
 
       if (!movie) return;
+      currentMovie = movie;
 
-      if (KNOWN_MOVIE_MAP[movie.id]) {
+      if (movie.imdb && movie.imdb.id) {
+        currentImdbId = movie.imdb.id;
+        currentTmdbId = movie.imdb.id;
+      } else if (KNOWN_MOVIE_MAP[movie.id]) {
         currentTmdbId = KNOWN_MOVIE_MAP[movie.id].tmdb;
         currentImdbId = KNOWN_MOVIE_MAP[movie.id].imdb;
       } else {
-        // Automatic Dynamic IMDb Resolver for all 16,000 catalog movies
+        // Automatic Dynamic IMDb Resolver for catalog movies
         const parsed = parseTitleAndYear(movie.title || movie.id);
         const resolvedImdb = await resolveImdbIdDynamically(parsed.searchQuery, parsed.year);
         if (resolvedImdb) {
@@ -790,8 +801,17 @@
         document.getElementById('badge-imdb-rating').textContent = `⭐ IMDb ${movie.imdb.rating}`;
       }
 
-      // Initialize with Hindi Audio
-      switchAudioLanguage('hindi');
+      // Initialize with uploaded EarnVids embed if present, else Hindi audio
+      if (movie.embed_url) {
+        const iframe = document.getElementById('cinema-iframe');
+        if (iframe) iframe.src = movie.embed_url;
+        const tip = document.getElementById('audio-tip-text');
+        if (tip) {
+          tip.innerHTML = `<span>⚡ <strong>BollyHub High-Speed Stream Active</strong> • Verified live EarnVids stream playing. <a href="javascript:void(0)" onclick="cycleHindiStream()" style="color:#fbbf24; text-decoration:underline;">Click here to switch stream mirror</a></span>`;
+        }
+      } else {
+        switchAudioLanguage('hindi');
+      }
 
       // Download Button Link
       const dlBtn = document.getElementById('stream-download-btn');
