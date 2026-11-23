@@ -1,0 +1,49 @@
+name: BollyHub 24/7 Cloud EarnVids Uploader
+
+on:
+  schedule:
+    # Runs every 2 hours automatically in Microsoft Azure Cloud
+    - cron: '0 */2 * * *'
+  # Allows 1-click manual trigger from mobile or GitHub web
+  workflow_dispatch:
+    inputs:
+      batch_size:
+        description: 'Number of movies/qualities to upload in this run'
+        required: false
+        default: '25'
+
+jobs:
+  upload-to-earnvids:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout Code Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Dependencies
+        run: |
+          npm install
+
+      - name: Run Cloud EarnVids Bulk Uploader
+        env:
+          EARNVIDS_KEY: ${{ secrets.EARNVIDS_KEY || '48914lqe3hwneiukt644z' }}
+          BATCH_SIZE: ${{ github.event.inputs.batch_size || '25' }}
+        run: |
+          node cloud_earnvid_uploader.cjs
+
+      - name: Commit and Push Upload Results & Checkpoints
+        run: |
+          git config --global user.name "BollyHub Cloud Bot"
+          git config --global user.email "bot@bollyhub.app"
+          git add data/earnvid_uploaded_checkpoint.json data/earnvid_movies_uploaded.json
+          git status
+          git diff-index --quiet HEAD || git commit -m "Cloud Upload Update: Pushed new movies to EarnVids [skip ci]"
+          git push origin main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
