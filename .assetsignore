@@ -1,0 +1,9 @@
+# Cloudflare Workers static assets ignore file
+data/bollyflix_categorized_download_links.json
+data/bollyflix_categorized_download_links.json.gz
+bollyflix_scraper/
+.github/
+*.cjs
+*.mjs
+node_modules/
+.git/
