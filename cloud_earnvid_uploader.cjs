@@ -229,6 +229,12 @@ async function run() {
   fs.writeFileSync(checkpointPath, JSON.stringify(Array.from(checkpoint), null, 2), 'utf8');
   fs.writeFileSync(resultsPath, JSON.stringify(uploadedResults, null, 2), 'utf8');
 
+  // Automatically update master persistent archive
+  try {
+    const { execSync } = require('child_process');
+    execSync('node update_master_log.cjs', { cwd: __dirname });
+  } catch (_) {}
+
   console.log('\n===============================================================');
   console.log(`✨ Batch Complete: ${successCount}/${currentBatch.length} pushed to EarnVids successfully.`);
   console.log(`💾 Checkpoint saved (${checkpoint.size} total uploaded).`);
