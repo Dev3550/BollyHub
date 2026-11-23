@@ -177,7 +177,7 @@ async function run() {
       if (json.status === 200 && json.result && json.result.filecode) {
         const filecode = json.result.filecode;
         console.log(`    ✅ PUSHED! EarnVids Filecode: ${filecode}`);
-        console.log(`    🎬 Embed: https://morencius.com/e/${filecode}`);
+        console.log(`    🎬 Embed: https://morencius.com/embed/${filecode}`);
 
         checkpoint.add(item.uniqueKey);
         uploadedResults.push({
@@ -186,7 +186,7 @@ async function run() {
           category: item.category,
           quality: item.quality,
           filecode: filecode,
-          embedUrl: `https://morencius.com/e/${filecode}`,
+          embedUrl: `https://morencius.com/embed/${filecode}`,
           uploadedAt: new Date().toISOString()
         });
         successCount++;

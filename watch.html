@@ -544,19 +544,16 @@
       </div>
     </div>
 
-    <!-- Audio Language Switcher Bar (Hindi / English Selector) -->
+    <!-- High-Speed Live Player Bar -->
     <div class="audio-lang-bar">
       <div class="lang-selector-group">
-        <span class="lang-label">🎧 Audio Language:</span>
-        <button class="lang-pill active" id="btn-lang-hindi" onclick="switchAudioLanguage('hindi')">
-          <span>🇮🇳</span> Hindi (हिंदी)
-        </button>
-        <button class="lang-pill" id="btn-lang-english" onclick="switchAudioLanguage('english')">
-          <span>🇬🇧</span> English (Original)
-        </button>
+        <span class="lang-label">⚡ Stream Server:</span>
+        <span class="lang-pill active">
+          <span>🎬</span> EarnVids Cloud HD Player
+        </span>
       </div>
       <div class="lang-tip" id="audio-tip-text">
-        <span>🇮🇳 <strong>Hindi Audio Active</strong> • <a href="javascript:void(0)" onclick="cycleHindiStream()" style="color:#fbbf24; text-decoration:underline;">Click here to switch Hindi stream mirror</a> or click ⚙️ inside player to pick Hindi track.</span>
+        <span>⚡ <strong>EarnVids HD Active</strong> • Click ⚙️ in player for Audio/Quality or click "Open Fullscreen EarnVids Player" for direct view.</span>
       </div>
     </div>
 
@@ -581,22 +578,13 @@
         </button>
       </div>
       <div class="toolbar-right">
-        <a id="direct-cloud-player-btn" href="#" target="_blank" class="tool-btn" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: #000; font-weight: 700; border: none;" title="Open directly in EarnVids Cloud Player">
-          <span>🚀</span> Open Fullscreen Cloud Player
+        <a id="direct-cloud-player-btn" href="#" target="_blank" class="tool-btn" style="background: linear-gradient(135deg, #10b981, #059669); color: #fff; font-weight: 700; border: none;" title="Open in 1-Click High-Speed Fullscreen Player">
+          <span>🚀</span> Open Fullscreen EarnVids Player
         </a>
-        <a id="stream-download-btn" href="#" class="btn-cinema-dl">
-          📥 Download Full Movie (480p • 720p • 1080p)
+        <a id="stream-download-btn" href="#" target="_blank" class="btn-cinema-dl">
+          📥 Download Full Movie (FastDL)
         </a>
       </div>
-    </div>
-
-    <!-- Multi-Server Selector Bar -->
-    <div style="margin-top: 10px; padding: 10px 14px; background: rgba(15, 23, 42, 0.7); border: 1px solid var(--glass-border); border-radius: 10px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-      <span style="font-size: 12px; font-weight: 700; color: #fbbf24;">⚡ Streaming Servers:</span>
-      <button class="tool-btn active" id="srv-btn-0" onclick="setStreamServer(0)" style="font-size: 12px; padding: 6px 12px;">Server 1 (EarnVids HD)</button>
-      <button class="tool-btn" id="srv-btn-1" onclick="setStreamServer(1)" style="font-size: 12px; padding: 6px 12px;">Server 2 (VidSrc Cloud)</button>
-      <button class="tool-btn" id="srv-btn-2" onclick="setStreamServer(2)" style="font-size: 12px; padding: 6px 12px;">Server 3 (2Embed OTT)</button>
-      <button class="tool-btn" id="srv-btn-3" onclick="setStreamServer(3)" style="font-size: 12px; padding: 6px 12px;">Server 4 (VidLink Pro)</button>
     </div>
 
     <!-- Dynamic Movie Information & Quality Downloads -->
@@ -635,131 +623,15 @@
       }
     };
 
-    let currentTmdbId = '1112426';
-    let currentImdbId = 'tt27510174';
-    let currentAudioLang = 'hindi';
-    let hindiStreamIndex = 0;
     let currentMovie = null;
 
-    // Multiple Stream Mirrors ensuring authentic playback across movies
-    const HINDI_STREAM_URLS = [
-      (tmdb, imdb) => `https://vidsrc.pm/embed/movie/${imdb}`, // VidSrc Cloud (Indian stream mirror with native Hindi audio track)
-      (tmdb, imdb) => `https://2embed.cc/embed/${imdb}`, // 2Embed Indian Mirror (Accepts IMDb ID)
-      (tmdb, imdb) => `https://autoembed.co/movie/imdb/${imdb}`, // AutoEmbed Mirror
-      (tmdb, imdb) => `https://vidlink.pro/movie/${tmdb}?player=jw&primaryColor=f59e0b&secondaryColor=8b5cf6` // VidLink JW
-    ];
-
-    function getStreamUrl(lang, tmdbId, imdbId) {
-      if (lang === 'hindi') {
-        if (currentMovie && currentMovie.embed_url && hindiStreamIndex === 0) {
-          return currentMovie.embed_url.replace('/e/', '/embed/');
-        }
-        const mirrorIdx = (currentMovie && currentMovie.embed_url) ? hindiStreamIndex - 1 : hindiStreamIndex;
-        return HINDI_STREAM_URLS[Math.abs(mirrorIdx) % HINDI_STREAM_URLS.length](tmdbId, imdbId);
-      } else {
-        // Pure English original audio stream (supports IMDb ID as well)
-        return `https://vidsrc.pm/embed/movie/${imdbId}`;
-      }
-    }
-
-    // Dynamic Title & Year Parser for automatic movie resolution
-    function parseTitleAndYear(rawTitle) {
-      const yearMatch = rawTitle.match(/\b(19\d\d|20\d\d)\b/);
-      const year = yearMatch ? parseInt(yearMatch[1], 10) : null;
-
-      let clean = rawTitle
-        .replace(/^Download\s+/i, '')
-        .replace(/\[18\+\]/gi, '')
-        .replace(/\{.*?\}/g, '')
-        .replace(/\(.*?\)/g, ' ')
-        .split(/\b(480p|720p|1080p|2160p|WEB-DL|BluRay|HDTC|HDRip|ESub|Dual Audio|Multi Audio|Hindi Movie)\b/i)[0]
-        .replace(/[\|:\-_]/g, ' ')
-        .replace(/\s+/g, ' ')
-        .trim();
-
-      const searchQuery = clean.toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
-      return { cleanTitle: clean, searchQuery, year };
-    }
-
-    // Instant Free Public IMDb ID Resolver
-    async function resolveImdbIdDynamically(searchQuery, year) {
-      if (!searchQuery) return null;
-      try {
-        const firstLetter = searchQuery[0] || 'a';
-        const resp = await fetch(`https://v3.sg.media-imdb.com/suggestion/${firstLetter}/${searchQuery}.json`);
-        if (!resp.ok) return null;
-        const data = await resp.json();
-        const items = (data.d || []).filter(item => item.id && item.id.startsWith('tt'));
-        if (items.length === 0) return null;
-
-        if (year) {
-          const matchYear = items.find(item => item.y === year || Math.abs(item.y - year) <= 1);
-          if (matchYear) return matchYear.id;
-        }
-        return items[0].id;
-      } catch (e) {
-        console.warn('[BollyHub] Dynamic IMDb resolution fallback:', e);
-        return null;
-      }
-    }
-
-    function switchAudioLanguage(lang) {
-      currentAudioLang = lang;
-      
-      const btnHindi = document.getElementById('btn-lang-hindi');
-      const btnEnglish = document.getElementById('btn-lang-english');
-      if (btnHindi) btnHindi.classList.toggle('active', lang === 'hindi');
-      if (btnEnglish) btnEnglish.classList.toggle('active', lang === 'english');
-
-      const tip = document.getElementById('audio-tip-text');
-      const badgeText = document.getElementById('badge-audio-text');
-
-      if (tip) {
-        if (lang === 'hindi') {
-          tip.innerHTML = `<span>🇮🇳 <strong>Hindi Audio Active</strong> • <a href="javascript:void(0)" onclick="cycleHindiStream()" style="color:#fbbf24; text-decoration:underline;">Click here to switch Hindi stream mirror</a> or click ⚙️ inside player to pick Hindi track.</span>`;
-          if (badgeText) badgeText.textContent = '🎧 Hindi Multi-Audio';
-        } else {
-          tip.innerHTML = `<span>🇬🇧 <strong>English Audio Active</strong> (Original Hollywood / English Audio)</span>`;
-          if (badgeText) badgeText.textContent = '🎧 English Original Audio';
-        }
-      }
-
+    function reloadPlayer() {
       const iframe = document.getElementById('cinema-iframe');
       if (iframe) {
-        iframe.src = getStreamUrl(currentAudioLang, currentTmdbId, currentImdbId);
+        const curSrc = iframe.src;
+        iframe.src = '';
+        setTimeout(() => { iframe.src = curSrc; }, 100);
       }
-    }
-
-    function setStreamServer(idx) {
-      hindiStreamIndex = idx;
-      for (let i = 0; i < 4; i++) {
-        const btn = document.getElementById('srv-btn-' + i);
-        if (btn) btn.classList.toggle('active', i === idx);
-      }
-      const iframe = document.getElementById('cinema-iframe');
-      if (iframe) {
-        if (idx === 0) {
-          if (currentMovie && currentMovie.embed_url) {
-            iframe.src = currentMovie.embed_url.replace('/e/', '/embed/');
-          } else {
-            iframe.src = HINDI_STREAM_URLS[0](currentTmdbId, currentImdbId);
-          }
-        } else {
-          const mirrorFn = HINDI_STREAM_URLS[idx - 1] || HINDI_STREAM_URLS[0];
-          iframe.src = mirrorFn(currentTmdbId, currentImdbId);
-        }
-      }
-      const tip = document.getElementById('audio-tip-text');
-      if (tip) {
-        const srvNames = ['EarnVids Cloud HD', 'VidSrc Cloud', '2Embed OTT', 'VidLink Pro'];
-        tip.innerHTML = `<span>⚡ <strong>Active: ${srvNames[idx]}</strong> • If video doesn't play or is blocked by adblock, switch to another server or click "Open Fullscreen Cloud Player".</span>`;
-      }
-    }
-
-    function cycleHindiStream() {
-      const maxMirrors = 4;
-      hindiStreamIndex = (hindiStreamIndex + 1) % maxMirrors;
-      setStreamServer(hindiStreamIndex);
     }
 
     function toggleTheaterMode() {
@@ -834,23 +706,27 @@
         document.getElementById('badge-imdb-rating').textContent = `⭐ IMDb ${movie.imdb.rating}`;
       }
 
-      // Initialize with Server 0 (EarnVids HD stream)
-      setStreamServer(0);
+      const fileCode = movie.earnvid_filecode || (movie.qualities && movie.qualities[0] && movie.qualities[0].filecode) || '3m71g7vk5t0j';
 
-      // Direct Cloud Player Button (EarnVids fullscreen direct link)
-      const directPlayerBtn = document.getElementById('direct-cloud-player-btn');
-      if (directPlayerBtn) {
-        if (movie.earnvid_filecode) {
-          directPlayerBtn.href = `https://earnvids.com/${movie.earnvid_filecode}`;
-          directPlayerBtn.style.display = 'inline-flex';
-        } else {
-          directPlayerBtn.style.display = 'none';
-        }
+      // Initialize with EarnVids embed
+      const iframe = document.getElementById('cinema-iframe');
+      if (iframe) {
+        iframe.src = `https://morencius.com/embed/${fileCode}`;
       }
 
-      // Download Button Link
+      // Direct Fullscreen EarnVids Player Button
+      const directPlayerBtn = document.getElementById('direct-cloud-player-btn');
+      if (directPlayerBtn) {
+        directPlayerBtn.href = `https://morencius.com/file/${fileCode}`;
+        directPlayerBtn.style.display = 'inline-flex';
+      }
+
+      // Download Button Link (Official EarnVids Direct Download)
       const dlBtn = document.getElementById('stream-download-btn');
-      dlBtn.href = `download.html?id=${encodeURIComponent(movie.id)}`;
+      if (dlBtn) {
+        dlBtn.href = `https://morencius.com/d/${fileCode}`;
+        dlBtn.target = '_blank';
+      }
 
       // Render Movie Info & Direct Quality Cards Below Player
       const detailContainer = document.getElementById('movie-detail-container');
@@ -859,19 +735,20 @@
         const categoriesTags = (movie.categories || []).map(c => `<span class="crew-pill"><strong>Category:</strong> ${c}</span>`).join(' ');
         const castPills = (movie.imdb?.cast || []).map(actor => `<span class="crew-pill">${actor}</span>`).join(' ');
         
-        // Quality Download Cards
+        // Quality Download Cards (Each links directly to EarnVids /d/ page)
         const qualitiesHtml = (movie.qualities && movie.qualities.length > 0) ? 
           movie.qualities.map((q, idx) => {
             const qTitle = cleanText(q.quality_name || 'HD WEB-DL');
             const sizeMatch = qTitle.match(/\[(.*?)\]/);
             const sizeText = sizeMatch ? sizeMatch[1] : 'Direct DL';
+            const qCode = q.filecode || q.file_id || fileCode;
             return `
               <div class="quality-download-card">
                 <div>
                   <div class="q-name">${qTitle}</div>
-                  <div style="font-size:11px; color:#94a3b8; margin-top:4px;">⚡ 1-Click Fast Direct DL</div>
+                  <div style="font-size:11px; color:#10b981; margin-top:4px;">⚡ 1-Click Fast Direct DL (EarnVids)</div>
                 </div>
-                <a href="download.html?id=${encodeURIComponent(movie.id)}&qid=${idx}" class="q-action-btn">
+                <a href="https://morencius.com/d/${qCode}" target="_blank" class="q-action-btn">
                   📥 Download (${sizeText})
                 </a>
               </div>
@@ -880,9 +757,9 @@
             <div class="quality-download-card">
               <div>
                 <div class="q-name">${cleanTitle} - Full HD</div>
-                <div style="font-size:11px; color:#94a3b8; margin-top:4px;">Direct Cloud Storage</div>
+                <div style="font-size:11px; color:#10b981; margin-top:4px;">⚡ 1-Click Fast Direct DL (EarnVids)</div>
               </div>
-              <a href="download.html?id=${encodeURIComponent(movie.id)}" class="q-action-btn">
+              <a href="https://morencius.com/d/${fileCode}" target="_blank" class="q-action-btn">
                 📥 Download Full HD
               </a>
             </div>

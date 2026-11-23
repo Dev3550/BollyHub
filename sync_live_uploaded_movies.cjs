@@ -248,12 +248,12 @@ async function syncLiveCatalog() {
         embed_url: `https://morencius.com/embed/${file.file_code}`,
         mirrors: [
           {
-            provider: 'EarnVids Cloud Direct',
-            url: `https://earnvids.com/${file.file_code}`
+            provider: 'EarnVids 1-Click Direct Download',
+            url: `https://morencius.com/d/${file.file_code}`
           },
           {
             provider: 'EarnVids High Speed Stream',
-            url: `https://morencius.com/embed/${file.file_code}`
+            url: `https://morencius.com/file/${file.file_code}`
           }
         ]
       };

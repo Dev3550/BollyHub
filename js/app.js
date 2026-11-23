@@ -282,7 +282,7 @@ async function initDetailPage() {
               ▶️ Play Cinema Player
             </a>
             ${movie.earnvid_filecode ? `
-              <a href="https://earnvids.com/${movie.earnvid_filecode}" target="_blank" class="btn-dl" style="background: linear-gradient(135deg, #8b5cf6, #6366f1); color: #fff; font-size: 14px; font-weight: 700; padding: 12px 20px; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
+              <a href="https://morencius.com/file/${movie.earnvid_filecode}" target="_blank" class="btn-dl" style="background: linear-gradient(135deg, #10b981, #059669); color: #fff; font-size: 14px; font-weight: 700; padding: 12px 20px; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
                 🚀 Direct Cloud Player
               </a>
             ` : ''}
@@ -319,38 +319,34 @@ async function initDownloadHubPage() {
   const cleanQName = cleanText(qualityObj.quality_name || 'WEB-DL HD');
   const fileId = qualityObj.file_id || '1JCJo1ZDOMbMY18';
 
-  const mirrors = qualityObj.mirrors || [];
+  const movieFileCode = qualityObj.filecode || qualityObj.file_id || movie.earnvid_filecode;
+  const instantDlUrl = movieFileCode ? `https://morencius.com/d/${movieFileCode}` : '#';
+  const cloudUrl = movieFileCode ? `https://morencius.com/file/${movieFileCode}` : '#';
 
-  // Filter out any gdflix / fastdlserver URLs from mirrors to ensure 100% clean direct locker URLs
-  const cleanMirrors = mirrors.filter(m => m.url && !m.url.includes('gdflix') && !m.url.includes('fastdlserver'));
+  const mirrors = [
+    {
+      provider: 'EarnVids 1-Click Direct Download',
+      url: instantDlUrl
+    },
+    {
+      provider: 'EarnVids High-Speed Cloud Stream',
+      url: cloudUrl
+    }
+  ];
 
-  const fastDlPagesLink = qualityObj.embed_url || movie.embed_url || (movie.earnvid_filecode ? `https://earnvids.com/${movie.earnvid_filecode}` : '#');
-
-  const primaryCleanMirror = cleanMirrors.find(m => m.url.includes('earnvids') || m.url.includes('morencius') || m.url.includes('gofile') || m.url.includes('vikingfile') || m.url.includes('megaup') || m.url.includes('mixdrop')) || cleanMirrors[0];
-  const secondaryCleanMirror = cleanMirrors.find(m => m !== primaryCleanMirror) || cleanMirrors[1] || cleanMirrors[0];
-  
-  // Instant DL Button: Uses 1-click clean storage locker (EarnVids / GoFile / MegaUp)
-  const instantDlUrl = primaryCleanMirror ? primaryCleanMirror.url : fastDlPagesLink;
-  
-  // Fast Cloud Button: Uses secondary clean storage locker if available, else primary
-  const cloudUrl = secondaryCleanMirror ? secondaryCleanMirror.url : (primaryCleanMirror ? primaryCleanMirror.url : fastDlPagesLink);
-
-  let mirrorsHtml = '';
-  if (mirrors.length > 0) {
-    mirrorsHtml = `
-      <div style="margin-top:24px; text-align:left;">
-        <h3 style="font-size:14px; margin-bottom:12px; color:#cbd5e1;">⚡ Direct Storage Mirrors (~ BollyHub)</h3>
-        <div style="display:flex; flex-direction:column; gap:10px;">
-          ${mirrors.map(m => `
-            <a href="${m.url}" target="_blank" class="btn-cloud" style="background: linear-gradient(135deg, #1e293b, #334155); border: 1px solid #475569; padding: 12px 16px; font-size:13px; display:flex; align-items:center; justify-content:space-between;">
-              <span>⚡ Download via <strong>${(m.provider || 'Direct Cloud').toUpperCase()}</strong></span>
-              <span style="font-size:11px; opacity:0.8; background:rgba(255,255,255,0.1); padding:2px 8px; border-radius:4px;">1-CLICK DIRECT</span>
-            </a>
-          `).join('')}
-        </div>
+  let mirrorsHtml = `
+    <div style="margin-top:24px; text-align:left;">
+      <h3 style="font-size:14px; margin-bottom:12px; color:#cbd5e1;">⚡ Verified Storage Mirrors (EarnVids Engine)</h3>
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        ${mirrors.map(m => `
+          <a href="${m.url}" target="_blank" class="btn-cloud" style="background: linear-gradient(135deg, #1e293b, #334155); border: 1px solid #475569; padding: 12px 16px; font-size:13px; display:flex; align-items:center; justify-content:space-between;">
+            <span>⚡ Access via <strong>${m.provider.toUpperCase()}</strong></span>
+            <span style="font-size:11px; opacity:0.8; background:rgba(255,255,255,0.1); padding:2px 8px; border-radius:4px;">1-CLICK DIRECT</span>
+          </a>
+        `).join('')}
       </div>
-    `;
-  }
+    </div>
+  `;
 
   const fileName = `${cleanMovieTitle.split(' ')[0]}_${cleanQName.replace(/[^a-zA-Z0-9]/g, '_')}.mkv`;
   document.title = `Download ${fileName} - BollyHub Fast Engine`;

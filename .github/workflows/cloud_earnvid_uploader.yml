@@ -2,15 +2,20 @@ name: BollyHub 24/7 Cloud EarnVids Uploader
 
 on:
   schedule:
-    # Runs every 2 hours automatically in Microsoft Azure Cloud
-    - cron: '0 */2 * * *'
+    # Runs every 1 hour automatically in Microsoft Azure Cloud
+    - cron: '0 * * * *'
+  push:
+    branches:
+      - main
+    paths:
+      - 'data/trigger_cloud_upload.txt'
   # Allows 1-click manual trigger from mobile or GitHub web
   workflow_dispatch:
     inputs:
       batch_size:
         description: 'Number of movies/qualities to upload in this run'
         required: false
-        default: '25'
+        default: '30'
 
 jobs:
   upload-to-earnvids:
