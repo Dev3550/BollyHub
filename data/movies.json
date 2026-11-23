@@ -29,6 +29,22 @@
     "qualities": [
       {
         "quality_name": "720P WEB-DL",
+        "file_id": "r4nanbxeqp6q",
+        "filecode": "r4nanbxeqp6q",
+        "embed_url": "https://morencius.com/e/r4nanbxeqp6q",
+        "mirrors": [
+          {
+            "provider": "EarnVids Cloud Direct",
+            "url": "https://earnvids.com/r4nanbxeqp6q"
+          },
+          {
+            "provider": "EarnVids High Speed Stream",
+            "url": "https://morencius.com/e/r4nanbxeqp6q"
+          }
+        ]
+      },
+      {
+        "quality_name": "720P WEB-DL",
         "file_id": "sunmslmgdjj7",
         "filecode": "sunmslmgdjj7",
         "embed_url": "https://morencius.com/e/sunmslmgdjj7",
@@ -316,7 +332,7 @@
     "backdrop_url": "https://images.metahub.space/background/medium/tt41740111/img.jpg",
     "imdb": {
       "id": "tt41740111",
-      "rating": "8.3",
+      "rating": "8.0",
       "title": "Kiku Chiranjeevi",
       "director": "Shubha Sai Venkat",
       "cast": [
