@@ -1,0 +1,10 @@
+async function test() {
+  const testUrl = 'https://video-downloads.googleusercontent.com/ADGPM2ndx8NhhgAbDhcstMW4CvU3AoSpJi6KwsLANWzPglvWIlT0Nh770ANZbYhSdYgls_rrH7GToNeM4qZVbRX2NBCqM9pVEmA6yEeYXHpWHP52pklKKzIUGydgUvCGuSy8YeoGaLj9ppLd04ygO6SaYLLxRohZtcG_mEOZJFFyz5kYUIcoCIXEr_WQnkgXI1Jr79XB-ZRKaN0b3zGxzp3fxELDT4BVCBxpo3JPwq6ZbSBbsAbV6naaMstAeiBUllznt8RnLDCiFTwqwZ6rPIXwpspmCYp_fOPchCV2iwgTozWiUVOZwd6MzLuiysR0i9sTYk_JrP-NRZn3vyF1iwqMt-OxX-Tlv_kYK5TVBOoI89rL70KEY49HUJfAebb3EqLdtaejsi0xHP-NEWuH1oktmLqFSt_RQdc_nffMYqwEUcJJ2M0bqCABWRqUTgc04vt7ax3ErSHaSTq1WqrOGmjKaBd9lqLBVlxskcIPcBukefXzk632-Tdov4Tx6UAZcOqERC6fzbXhdgXtUwywFiEO_lSd_OPYozupRyr1KCVWMBVoSk-Tfiqba6DBbV1ogYSjmNu64DB9j58wwZaU6jSBaP7yyIJGRbe1Xd5QmbIl4UVVaJc13ZRV65Q9aUshEkNJYhRRLNU4b3vqFKCa48RqfdyLUD4AoiksBCtKWs40XQnYOy6SAE56AEr2k5Ysuv1s1DARcRp6IbgD0nLhcWsucvVek7oO3EcDOQ08Hjnm3EyL4kNUFRVfcjnehQLLg0e9K-ujvFpAhPqJObWzu1uNXxIkWw8FLUpU9HFg3HY2U90XkE2kVT6qjkP3jYg9E0uszkZvn6j50kLwNvPSutxMko6rDKpLiwqZLvaaDsKA3p185nbZUEVNVThlXIiIjTav9bi1Onkwm2TvKLIJK4oCobZzy47qV4m9CClMstAYYeLlpVNQYW7GLrhA2jDvUk5J4bQs6JAvjesPotaF5KbqYcXGORO2uAyRIdurSuOkheLKYSTvhR3AdCIeSlfPa15kfO0UPkNGGemjOIrB5lEtmO3ZSpJY0kGYzo1NlWGh4Wm6mGHgGBDTUOKus0PLJAbGS8Gw4mdPPXH-R0zM9HeR73rJifFFaS9IrksuMQYXbk3xPmsdTRg';
+  const res = await fetch(testUrl, { method: 'HEAD' });
+  console.log('Google CDN HEAD status:', res.status);
+  console.log('Headers:');
+  for (const [k, v] of res.headers.entries()) {
+    console.log(k + ': ' + v);
+  }
+}
+test();
