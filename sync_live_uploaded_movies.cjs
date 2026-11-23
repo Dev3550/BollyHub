@@ -180,22 +180,32 @@ async function syncLiveCatalog() {
     console.log(`\nFetching IMDb metadata: "${group.cleanQuery}" (${group.year})...`);
     const imdb = await fetchImdbMetadata(group.cleanQuery, group.year);
 
-    // Determine category
-    let categories = ['BOLLYWOOD'];
-    const titleLower = group.rawTitle.toLowerCase();
+    // Primary playable file
+    const primaryFile = group.files.find(x => x.canplay === 1) || group.files[0];
 
-    if (group.folderCat === 'SOUTH' || titleLower.includes('telugu') || titleLower.includes('tamil') || titleLower.includes('kannada') || titleLower.includes('malayalam') || titleLower.includes('kiku') || titleLower.includes('kantara') || titleLower.includes('pushpa') || titleLower.includes('k.g.f') || titleLower.includes('k g f') || titleLower.includes('kgf') || titleLower.includes('salaar') || titleLower.includes('leo')) {
+    // Determine category strictly from EarnVids folder ID first!
+    const fldNum = parseInt(primaryFile.fld_id, 10);
+    let categories = ['BOLLYWOOD'];
+
+    if ([157408, 157409, 157410, 157411].includes(fldNum)) {
       categories = ['SOUTH HINDI DUBBED', 'SOUTH', 'DUAL AUDIO'];
-    } else if (group.folderCat === 'HOLLYWOOD' || titleLower.includes('english') || titleLower.includes('oppenheimer') || titleLower.includes('her man') || titleLower.includes('deadpool') || titleLower.includes('hollywood')) {
+    } else if ([157404, 157405, 157406, 157407].includes(fldNum)) {
       categories = ['HOLLYWOOD', 'DUAL AUDIO'];
-    } else {
+    } else if ([157400, 157401, 157402, 157403].includes(fldNum)) {
       categories = ['BOLLYWOOD'];
+    } else {
+      // Fallback only if uploaded directly to root without folder
+      const titleLower = group.rawTitle.toLowerCase();
+      if (titleLower.includes('telugu') || titleLower.includes('tamil') || titleLower.includes('kannada') || titleLower.includes('malayalam') || titleLower.includes('kiku') || titleLower.includes('kantara') || titleLower.includes('pushpa') || titleLower.includes('k.g.f') || titleLower.includes('k g f') || titleLower.includes('kgf') || titleLower.includes('salaar') || titleLower.includes('leo')) {
+        categories = ['SOUTH HINDI DUBBED', 'SOUTH', 'DUAL AUDIO'];
+      } else if (titleLower.includes('english') || titleLower.includes('oppenheimer') || titleLower.includes('her man') || titleLower.includes('deadpool') || titleLower.includes('hollywood')) {
+        categories = ['HOLLYWOOD', 'DUAL AUDIO'];
+      } else {
+        categories = ['BOLLYWOOD'];
+      }
     }
 
     const movieSlug = imdb.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' + imdb.year;
-
-    // Primary playable file
-    const primaryFile = group.files.find(x => x.canplay === 1) || group.files[0];
 
     // Build qualities array
     const qualities = group.files.map((file, idx) => {
