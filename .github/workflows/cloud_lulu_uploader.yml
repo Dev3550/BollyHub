@@ -1,9 +1,9 @@
 name: BollyHub 24/7 Cloud LuluStream Uploader
 
 on:
-  schedule:
-    # Runs every 2 hours in the cloud automatically
-    - cron: '0 */2 * * *'
+  # schedule:
+  #   # Runs every 2 hours in the cloud automatically
+  #   - cron: '0 */2 * * *'
   # Allows 1-click manual trigger anytime from GitHub Actions UI or mobile
   workflow_dispatch:
     inputs:
