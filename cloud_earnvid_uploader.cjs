@@ -9,7 +9,11 @@ let cheerio;
 try {
   cheerio = require('cheerio');
 } catch (_) {
-  cheerio = require('d:/Exotic Clean/node_modules/cheerio');
+  try {
+    cheerio = require('d:/Exotic Clean/node_modules/cheerio');
+  } catch (e) {
+    console.error('Cheerio module could not be loaded:', e.message);
+  }
 }
 
 const EARNVIDS_KEY = process.env.EARNVIDS_KEY || '48914lqe3hwneiukt644z';
@@ -37,20 +41,47 @@ const FOLDER_MAP = {
   }
 };
 
-const headers = {
-  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+const browserHeaders = {
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+  'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+  'Accept-Language': 'en-US,en;q=0.9',
+  'Sec-Ch-Ua': '"Chromium";v="122", "Not(A:Brand";v="24", "Google Chrome";v="122"',
+  'Sec-Ch-Ua-Mobile': '?0',
+  'Sec-Ch-Ua-Platform': '"Windows"',
+  'Sec-Fetch-Dest': 'document',
+  'Sec-Fetch-Mode': 'navigate',
+  'Sec-Fetch-Site': 'none',
+  'Sec-Fetch-User': '?1',
+  'Upgrade-Insecure-Requests': '1'
 };
 
-async function resolveDirectGoogleCdnUrl(fastDlUrl) {
-  if (!fastDlUrl) return null;
+async function resolveDirectFromUrl(startUrl) {
+  if (!startUrl) return null;
   try {
-    let currentUrl = fastDlUrl;
-    for (let step = 0; step < 6; step++) {
-      const res = await fetch(currentUrl, { headers, redirect: 'manual' });
+    let currentUrl = startUrl;
+    for (let step = 0; step < 8; step++) {
+      const res = await fetch(currentUrl, {
+        headers: { ...browserHeaders, Referer: currentUrl },
+        redirect: 'manual',
+        signal: AbortSignal.timeout(15000)
+      });
+
       if ([301, 302, 307, 308].includes(res.status)) {
         const loc = res.headers.get('location');
         if (!loc) break;
         currentUrl = loc.startsWith('http') ? loc : new URL(loc, currentUrl).href;
+        if (currentUrl.includes('googleusercontent.com')) {
+          return currentUrl;
+        }
+        if (currentUrl.includes('url=http')) {
+          try {
+            const u = new URL(currentUrl);
+            const target = u.searchParams.get('url');
+            if (target && target.includes('googleusercontent.com')) {
+              return target;
+            }
+          } catch (_) {}
+        }
       } else if (res.status === 200) {
         const html = await res.text();
         const $ = cheerio.load(html);
@@ -63,23 +94,65 @@ async function resolveDirectGoogleCdnUrl(fastDlUrl) {
           }
         });
 
+        if (!instadlLink) {
+          $('a').each((_, a) => {
+            const href = $(a).attr('href');
+            if (href && href.includes('googleusercontent.com')) {
+              instadlLink = href;
+            }
+          });
+        }
+
         if (!instadlLink) return null;
 
+        if (instadlLink.includes('googleusercontent.com')) {
+          return instadlLink;
+        }
+
         const dlRes = await fetch(instadlLink, {
-          headers: { ...headers, Referer: currentUrl },
-          redirect: 'manual'
+          headers: { ...browserHeaders, Referer: currentUrl },
+          redirect: 'manual',
+          signal: AbortSignal.timeout(15000)
         });
+
         const dlLoc = dlRes.headers.get('location');
         if (dlLoc) {
-          const u = new URL(dlLoc);
-          return u.searchParams.get('url') || dlLoc;
+          if (dlLoc.includes('googleusercontent.com')) {
+            try {
+              const u = new URL(dlLoc);
+              return u.searchParams.get('url') || dlLoc;
+            } catch (_) {
+              return dlLoc;
+            }
+          }
+          return dlLoc;
         }
         return null;
       } else {
         break;
       }
     }
-  } catch (_) {}
+  } catch (err) {
+    // silently continue
+  }
+  return null;
+}
+
+async function resolveDirectGoogleCdnUrl(item) {
+  if (item.fastdlUrl) {
+    const cdn = await resolveDirectFromUrl(item.fastdlUrl);
+    if (cdn && cdn.startsWith('http')) return cdn;
+  }
+  if (item.fastdlPagesUrl) {
+    try {
+      const u = new URL(item.fastdlPagesUrl);
+      const innerUrl = u.searchParams.get('url');
+      if (innerUrl) {
+        const cdn = await resolveDirectFromUrl(innerUrl);
+        if (cdn && cdn.startsWith('http')) return cdn;
+      }
+    } catch (_) {}
+  }
   return null;
 }
 
@@ -159,7 +232,7 @@ async function run() {
     console.log(`[${i + 1}/${currentBatch.length}] Processing: ${item.title}`);
     console.log(`    📁 Target: ${item.category} -> ${item.quality} (EarnVids fld_id: ${item.fldId})`);
 
-    const directUrl = await resolveDirectGoogleCdnUrl(item.fastdlUrl);
+    const directUrl = await resolveDirectGoogleCdnUrl(item);
     if (!directUrl) {
       console.log(`    ⚠️ Could not resolve direct Google CDN link, skipping for next pass.`);
       continue;
@@ -180,7 +253,7 @@ async function run() {
         console.log(`    ⏳ Waiting for EarnVids to complete server-to-server download...`);
 
         let isVerified = false;
-        for (let attempt = 1; attempt <= 15; attempt++) {
+        for (let attempt = 1; attempt <= 25; attempt++) {
           await new Promise(r => setTimeout(r, 8000)); // check every 8 seconds
           try {
             const infoRes = await fetch(`https://earnvids.com/api/file/info?key=${EARNVIDS_KEY}&file_code=${filecode}`);
@@ -191,7 +264,7 @@ async function run() {
               isVerified = true;
               break;
             } else {
-              process.stdout.write(`       [Attempt ${attempt}/15] Downloading in background...\r`);
+              process.stdout.write(`       [Attempt ${attempt}/25] Downloading in background...\r`);
             }
           } catch (_) {}
         }
