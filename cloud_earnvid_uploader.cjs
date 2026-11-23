@@ -13,7 +13,7 @@ try {
 }
 
 const EARNVIDS_KEY = process.env.EARNVIDS_KEY || '48914lqe3hwneiukt644z';
-const BATCH_SIZE = parseInt(process.env.BATCH_SIZE, 10) || 50; // 50 movies/qualities per run (Runs every 15 mins)
+const BATCH_SIZE = parseInt(process.env.BATCH_SIZE, 10) || 5; // 5 verified movies per 15-min run to guarantee zero expired tokens
 
 // Folder Mapping on EarnVids (dev3550 Account)
 const FOLDER_MAP = {
@@ -176,20 +176,44 @@ async function run() {
 
       if (json.status === 200 && json.result && json.result.filecode) {
         const filecode = json.result.filecode;
-        console.log(`    ✅ PUSHED! EarnVids Filecode: ${filecode}`);
-        console.log(`    🎬 Embed: https://morencius.com/embed/${filecode}`);
+        console.log(`    ✅ Pushed to EarnVids remote queue: ${filecode}`);
+        console.log(`    ⏳ Waiting for EarnVids to complete server-to-server download...`);
 
-        checkpoint.add(item.uniqueKey);
-        uploadedResults.push({
-          movieId: item.movieId,
-          title: item.title,
-          category: item.category,
-          quality: item.quality,
-          filecode: filecode,
-          embedUrl: `https://morencius.com/embed/${filecode}`,
-          uploadedAt: new Date().toISOString()
-        });
-        successCount++;
+        let isVerified = false;
+        for (let attempt = 1; attempt <= 15; attempt++) {
+          await new Promise(r => setTimeout(r, 8000)); // check every 8 seconds
+          try {
+            const infoRes = await fetch(`https://earnvids.com/api/file/info?key=${EARNVIDS_KEY}&file_code=${filecode}`);
+            const infoJson = await infoRes.json();
+            const fileData = infoJson.result?.[0];
+            if (fileData && fileData.status === 200 && (fileData.file_length > 0 || fileData.canplay === 1)) {
+              console.log(`    🎉 100% Downloaded on EarnVids! File Size: ${(fileData.file_length / 1024 / 1024).toFixed(1)} MB (canplay: ${fileData.canplay})`);
+              isVerified = true;
+              break;
+            } else {
+              process.stdout.write(`       [Attempt ${attempt}/15] Downloading in background...\r`);
+            }
+          } catch (_) {}
+        }
+
+        if (isVerified) {
+          checkpoint.add(item.uniqueKey);
+          uploadedResults.push({
+            movieId: item.movieId,
+            title: item.title,
+            category: item.category,
+            quality: item.quality,
+            filecode: filecode,
+            embedUrl: `https://morencius.com/embed/${filecode}`,
+            uploadedAt: new Date().toISOString()
+          });
+          successCount++;
+          // Save checkpoint immediately after every successful movie
+          fs.writeFileSync(checkpointPath, JSON.stringify(Array.from(checkpoint), null, 2), 'utf8');
+          fs.writeFileSync(resultsPath, JSON.stringify(uploadedResults, null, 2), 'utf8');
+        } else {
+          console.log(`\n    ⚠️ Download still processing in background or delayed on EarnVids. Checkpoint not marked yet.`);
+        }
       } else {
         console.log(`    ❌ EarnVids API error:`, json);
       }

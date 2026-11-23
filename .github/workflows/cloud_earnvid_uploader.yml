@@ -15,7 +15,7 @@ on:
       batch_size:
         description: 'Number of movies/qualities to upload in this run'
         required: false
-        default: '50'
+        default: '5'
 
 jobs:
   upload-to-earnvids:
@@ -38,7 +38,7 @@ jobs:
       - name: Run Cloud EarnVids Bulk Uploader
         env:
           EARNVIDS_KEY: ${{ secrets.EARNVIDS_KEY || '48914lqe3hwneiukt644z' }}
-          BATCH_SIZE: ${{ github.event.inputs.batch_size || '50' }}
+          BATCH_SIZE: ${{ github.event.inputs.batch_size || '5' }}
         run: |
           node cloud_earnvid_uploader.cjs
           node sync_live_uploaded_movies.cjs
