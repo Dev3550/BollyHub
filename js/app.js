@@ -277,9 +277,16 @@ async function initDetailPage() {
               Stream instantly in your browser without downloading • Multi-Audio & Subtitles included.
             </div>
           </div>
-          <a href="watch.html?id=${encodeURIComponent(movie.id)}" class="btn-dl" style="background: linear-gradient(135deg, #f59e0b, #ef4444); color: #fff; font-size: 15px; font-weight: 700; padding: 12px 24px; border-radius: 8px; text-decoration: none; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4); display: inline-flex; align-items: center; gap: 8px;">
-            ▶️ Play Online Now
-          </a>
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <a href="watch.html?id=${encodeURIComponent(movie.id)}" class="btn-dl" style="background: linear-gradient(135deg, #f59e0b, #ef4444); color: #fff; font-size: 15px; font-weight: 700; padding: 12px 24px; border-radius: 8px; text-decoration: none; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4); display: inline-flex; align-items: center; gap: 8px;">
+              ▶️ Play Cinema Player
+            </a>
+            ${movie.earnvid_filecode ? `
+              <a href="https://earnvids.com/${movie.earnvid_filecode}" target="_blank" class="btn-dl" style="background: linear-gradient(135deg, #8b5cf6, #6366f1); color: #fff; font-size: 14px; font-weight: 700; padding: 12px 20px; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
+                🚀 Direct Cloud Player
+              </a>
+            ` : ''}
+          </div>
         </div>
 
         <div class="download-section">

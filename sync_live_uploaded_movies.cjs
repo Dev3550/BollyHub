@@ -8,6 +8,8 @@ const path = require('path');
 const EARNVIDS_KEY = process.env.EARNVIDS_KEY || '48914lqe3hwneiukt644z';
 
 // Known folder IDs on EarnVids
+const BROKEN_FILE_CODES = new Set(['sunmslmgdjj7', 'r4nanbxeqp6q', 'p1msmfg4ykih', 'u1wwwivj2khv']);
+
 const FOLDERS = [
   { id: 0, category: 'AUTO' },
   { id: 157399, category: 'AUTO' }, // Movies Root
@@ -156,6 +158,7 @@ async function syncLiveCatalog() {
       const json = await res.json();
       const files = json.result?.files || [];
       for (const f of files) {
+        if (BROKEN_FILE_CODES.has(f.file_code)) continue;
         if (!allFilesMap.has(f.file_code)) {
           allFilesMap.set(f.file_code, { ...f, folderCat: fld.category });
         }

@@ -581,10 +581,22 @@
         </button>
       </div>
       <div class="toolbar-right">
+        <a id="direct-cloud-player-btn" href="#" target="_blank" class="tool-btn" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: #000; font-weight: 700; border: none;" title="Open directly in EarnVids Cloud Player">
+          <span>🚀</span> Open Fullscreen Cloud Player
+        </a>
         <a id="stream-download-btn" href="#" class="btn-cinema-dl">
           📥 Download Full Movie (480p • 720p • 1080p)
         </a>
       </div>
+    </div>
+
+    <!-- Multi-Server Selector Bar -->
+    <div style="margin-top: 10px; padding: 10px 14px; background: rgba(15, 23, 42, 0.7); border: 1px solid var(--glass-border); border-radius: 10px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+      <span style="font-size: 12px; font-weight: 700; color: #fbbf24;">⚡ Streaming Servers:</span>
+      <button class="tool-btn active" id="srv-btn-0" onclick="setStreamServer(0)" style="font-size: 12px; padding: 6px 12px;">Server 1 (EarnVids HD)</button>
+      <button class="tool-btn" id="srv-btn-1" onclick="setStreamServer(1)" style="font-size: 12px; padding: 6px 12px;">Server 2 (VidSrc Cloud)</button>
+      <button class="tool-btn" id="srv-btn-2" onclick="setStreamServer(2)" style="font-size: 12px; padding: 6px 12px;">Server 3 (2Embed OTT)</button>
+      <button class="tool-btn" id="srv-btn-3" onclick="setStreamServer(3)" style="font-size: 12px; padding: 6px 12px;">Server 4 (VidLink Pro)</button>
     </div>
 
     <!-- Dynamic Movie Information & Quality Downloads -->
@@ -718,18 +730,36 @@
       }
     }
 
-    function cycleHindiStream() {
-      const maxMirrors = (currentMovie && currentMovie.embed_url ? 1 : 0) + HINDI_STREAM_URLS.length;
-      hindiStreamIndex = (hindiStreamIndex + 1) % maxMirrors;
+    function setStreamServer(idx) {
+      hindiStreamIndex = idx;
+      for (let i = 0; i < 4; i++) {
+        const btn = document.getElementById('srv-btn-' + i);
+        if (btn) btn.classList.toggle('active', i === idx);
+      }
       const iframe = document.getElementById('cinema-iframe');
       if (iframe) {
-        iframe.src = getStreamUrl('hindi', currentTmdbId, currentImdbId);
+        if (idx === 0) {
+          if (currentMovie && currentMovie.embed_url) {
+            iframe.src = currentMovie.embed_url.replace('/e/', '/embed/');
+          } else {
+            iframe.src = HINDI_STREAM_URLS[0](currentTmdbId, currentImdbId);
+          }
+        } else {
+          const mirrorFn = HINDI_STREAM_URLS[idx - 1] || HINDI_STREAM_URLS[0];
+          iframe.src = mirrorFn(currentTmdbId, currentImdbId);
+        }
       }
       const tip = document.getElementById('audio-tip-text');
       if (tip) {
-        const mirrorName = (currentMovie && currentMovie.embed_url && hindiStreamIndex === 0) ? 'BollyHub High-Speed Stream' : `OTT Mirror #${hindiStreamIndex}`;
-        tip.innerHTML = `<span>🔄 <strong>Switched to ${mirrorName}</strong> • If default is still English, use player ⚙️ audio track settings.</span>`;
+        const srvNames = ['EarnVids Cloud HD', 'VidSrc Cloud', '2Embed OTT', 'VidLink Pro'];
+        tip.innerHTML = `<span>⚡ <strong>Active: ${srvNames[idx]}</strong> • If video doesn't play or is blocked by adblock, switch to another server or click "Open Fullscreen Cloud Player".</span>`;
       }
+    }
+
+    function cycleHindiStream() {
+      const maxMirrors = 4;
+      hindiStreamIndex = (hindiStreamIndex + 1) % maxMirrors;
+      setStreamServer(hindiStreamIndex);
     }
 
     function toggleTheaterMode() {
@@ -761,10 +791,13 @@
 
     async function initWatchPage() {
       const urlParams = new URLSearchParams(window.location.search);
-      let movieId = urlParams.get('id') || 'stree-2-sarkate-ka-aatank-2024-hindi-movie';
+      let movieId = urlParams.get('id');
 
       const movies = await loadMoviesData();
-      const movie = movies.find(m => m.id === movieId) || movies.find(m => m.id.includes('stree-2')) || movies[0];
+      const movie = (movieId ? movies.find(m => m.id === movieId) : null) || 
+                    movies.find(m => m.id === 'leo-2023') || 
+                    movies.find(m => m.canplay === 1) || 
+                    movies[0];
 
       if (!movie) return;
       currentMovie = movie;
@@ -801,17 +834,18 @@
         document.getElementById('badge-imdb-rating').textContent = `⭐ IMDb ${movie.imdb.rating}`;
       }
 
-      // Initialize with uploaded EarnVids embed if present, else Hindi audio
-      if (movie.embed_url) {
-        const finalEmbedUrl = movie.embed_url.replace('/e/', '/embed/');
-        const iframe = document.getElementById('cinema-iframe');
-        if (iframe) iframe.src = finalEmbedUrl;
-        const tip = document.getElementById('audio-tip-text');
-        if (tip) {
-          tip.innerHTML = `<span>⚡ <strong>BollyHub High-Speed Stream Active</strong> • Verified live stream playing. <a href="javascript:void(0)" onclick="cycleHindiStream()" style="color:#fbbf24; text-decoration:underline;">Click here to switch stream mirror</a></span>`;
+      // Initialize with Server 0 (EarnVids HD stream)
+      setStreamServer(0);
+
+      // Direct Cloud Player Button (EarnVids fullscreen direct link)
+      const directPlayerBtn = document.getElementById('direct-cloud-player-btn');
+      if (directPlayerBtn) {
+        if (movie.earnvid_filecode) {
+          directPlayerBtn.href = `https://earnvids.com/${movie.earnvid_filecode}`;
+          directPlayerBtn.style.display = 'inline-flex';
+        } else {
+          directPlayerBtn.style.display = 'none';
         }
-      } else {
-        switchAudioLanguage('hindi');
       }
 
       // Download Button Link

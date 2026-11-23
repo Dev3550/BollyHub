@@ -23,39 +23,23 @@
       "genres": "Biography, Drama, History",
       "summary": "A dramatization of the life story of J. Robert Oppenheimer, the physicist who had a large hand in the development of the atomic bombs that brought an end to World War II."
     },
-    "earnvid_filecode": "sunmslmgdjj7",
-    "embed_url": "https://morencius.com/embed/sunmslmgdjj7",
+    "earnvid_filecode": "wxp9d9rdeeac",
+    "embed_url": "https://morencius.com/embed/wxp9d9rdeeac",
     "canplay": 1,
     "qualities": [
       {
-        "quality_name": "720P WEB-DL",
-        "file_id": "r4nanbxeqp6q",
-        "filecode": "r4nanbxeqp6q",
-        "embed_url": "https://morencius.com/embed/r4nanbxeqp6q",
+        "quality_name": "480P WEB-DL",
+        "file_id": "wxp9d9rdeeac",
+        "filecode": "wxp9d9rdeeac",
+        "embed_url": "https://morencius.com/embed/wxp9d9rdeeac",
         "mirrors": [
           {
             "provider": "EarnVids Cloud Direct",
-            "url": "https://earnvids.com/r4nanbxeqp6q"
+            "url": "https://earnvids.com/wxp9d9rdeeac"
           },
           {
             "provider": "EarnVids High Speed Stream",
-            "url": "https://morencius.com/embed/r4nanbxeqp6q"
-          }
-        ]
-      },
-      {
-        "quality_name": "720P WEB-DL",
-        "file_id": "sunmslmgdjj7",
-        "filecode": "sunmslmgdjj7",
-        "embed_url": "https://morencius.com/embed/sunmslmgdjj7",
-        "mirrors": [
-          {
-            "provider": "EarnVids Cloud Direct",
-            "url": "https://earnvids.com/sunmslmgdjj7"
-          },
-          {
-            "provider": "EarnVids High Speed Stream",
-            "url": "https://morencius.com/embed/sunmslmgdjj7"
+            "url": "https://morencius.com/embed/wxp9d9rdeeac"
           }
         ]
       }
