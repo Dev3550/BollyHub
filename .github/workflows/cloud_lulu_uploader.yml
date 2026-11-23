@@ -1,0 +1,49 @@
+name: BollyHub 24/7 Cloud LuluStream Uploader
+
+on:
+  schedule:
+    # Runs every 2 hours in the cloud automatically
+    - cron: '0 */2 * * *'
+  # Allows 1-click manual trigger anytime from GitHub Actions UI or mobile
+  workflow_dispatch:
+    inputs:
+      batch_size:
+        description: 'Number of movies/qualities to upload in this run'
+        required: false
+        default: '50'
+
+jobs:
+  upload-to-lulustream:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout Code Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Dependencies
+        run: |
+          npm install
+
+      - name: Run Cloud LuluStream Bulk Uploader
+        env:
+          LULU_KEY: ${{ secrets.LULU_KEY || '351753b6x5xkpcevzzblno' }}
+          BATCH_SIZE: ${{ github.event.inputs.batch_size || '30' }}
+        run: |
+          node cloud_lulu_uploader.cjs
+
+      - name: Commit and Push Upload Results & Checkpoints
+        run: |
+          git config --global user.name "BollyHub Cloud Bot"
+          git config --global user.email "bot@bollyhub.app"
+          git add data/lulu_uploaded_checkpoint.json data/lulu_movies_uploaded.json
+          git status
+          git diff-index --quiet HEAD || git commit -m "Cloud Upload Update: Pushed new movies to LuluStream [skip ci]"
+          git push origin main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
