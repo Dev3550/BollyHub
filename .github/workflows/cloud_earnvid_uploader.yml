@@ -44,7 +44,7 @@ jobs:
           git config --global user.email "bot@bollyhub.app"
           git add data/earnvid_uploaded_checkpoint.json data/earnvid_movies_uploaded.json data/movies.json
           git status
-          git diff-index --quiet HEAD || git commit -m "Cloud Upload Update: Pushed new movies to EarnVids & synced catalog [skip ci]"
+          git diff-index --quiet HEAD || git commit -m "Cloud Upload Update: Pushed new movies to EarnVids & synced catalog"
           git push origin main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

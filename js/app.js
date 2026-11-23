@@ -29,7 +29,7 @@ function getFastPosterUrl(posterUrl) {
 async function loadMoviesData() {
   if (moviesCache) return moviesCache;
   try {
-    const resp = await fetch('data/movies.json');
+    const resp = await fetch('data/movies.json?v=' + Date.now(), { cache: 'no-store' });
     if (!resp.ok) throw new Error('Failed to load movies');
     moviesCache = await resp.json();
     return moviesCache;
