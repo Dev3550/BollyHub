@@ -4,8 +4,10 @@
   "description": "BollyHub Movie Aggregator & Automated FastDL Scraper Engine",
   "main": "bollyflix_scraper/scraper.js",
   "scripts": {
-    "start": "node bollyflix_scraper/scraper.js",
-    "scrape": "node bollyflix_scraper/scraper.js"
+    "build": "echo \"BollyHub Static Build Completed\"",
+    "start": "node serve.mjs",
+    "scrape": "node bollyflix_scraper/scraper.js",
+    "sync": "node sync_live_uploaded_movies.cjs"
   },
   "dependencies": {
     "axios": "^1.6.8",
