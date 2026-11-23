@@ -563,7 +563,7 @@
     <!-- Video Player Shell -->
     <div class="cinema-player-shell">
       <div class="video-aspect-ratio">
-        <iframe id="cinema-iframe" src="" allowfullscreen="true" webkitallowfullscreen="true" mozallowfullscreen="true" scrolling="no"></iframe>
+        <iframe id="cinema-iframe" src="" frameborder="0" allow="autoplay; fullscreen; encrypted-media; picture-in-picture" allowfullscreen="true" webkitallowfullscreen="true" mozallowfullscreen="true" scrolling="no"></iframe>
       </div>
     </div>
 
@@ -640,7 +640,7 @@
     function getStreamUrl(lang, tmdbId, imdbId) {
       if (lang === 'hindi') {
         if (currentMovie && currentMovie.embed_url && hindiStreamIndex === 0) {
-          return currentMovie.embed_url;
+          return currentMovie.embed_url.replace('/e/', '/embed/');
         }
         const mirrorIdx = (currentMovie && currentMovie.embed_url) ? hindiStreamIndex - 1 : hindiStreamIndex;
         return HINDI_STREAM_URLS[Math.abs(mirrorIdx) % HINDI_STREAM_URLS.length](tmdbId, imdbId);
@@ -803,11 +803,12 @@
 
       // Initialize with uploaded EarnVids embed if present, else Hindi audio
       if (movie.embed_url) {
+        const finalEmbedUrl = movie.embed_url.replace('/e/', '/embed/');
         const iframe = document.getElementById('cinema-iframe');
-        if (iframe) iframe.src = movie.embed_url;
+        if (iframe) iframe.src = finalEmbedUrl;
         const tip = document.getElementById('audio-tip-text');
         if (tip) {
-          tip.innerHTML = `<span>⚡ <strong>BollyHub High-Speed Stream Active</strong> • Verified live EarnVids stream playing. <a href="javascript:void(0)" onclick="cycleHindiStream()" style="color:#fbbf24; text-decoration:underline;">Click here to switch stream mirror</a></span>`;
+          tip.innerHTML = `<span>⚡ <strong>BollyHub High-Speed Stream Active</strong> • Verified live stream playing. <a href="javascript:void(0)" onclick="cycleHindiStream()" style="color:#fbbf24; text-decoration:underline;">Click here to switch stream mirror</a></span>`;
         }
       } else {
         switchAudioLanguage('hindi');

@@ -242,7 +242,7 @@ async function syncLiveCatalog() {
         quality_name: `${qText} WEB-DL${sizeText}`,
         file_id: file.file_code,
         filecode: file.file_code,
-        embed_url: `https://morencius.com/e/${file.file_code}`,
+        embed_url: `https://morencius.com/embed/${file.file_code}`,
         mirrors: [
           {
             provider: 'EarnVids Cloud Direct',
@@ -250,7 +250,7 @@ async function syncLiveCatalog() {
           },
           {
             provider: 'EarnVids High Speed Stream',
-            url: `https://morencius.com/e/${file.file_code}`
+            url: `https://morencius.com/embed/${file.file_code}`
           }
         ]
       };
@@ -274,7 +274,7 @@ async function syncLiveCatalog() {
         summary: imdb.summary
       },
       earnvid_filecode: primaryFile.file_code,
-      embed_url: `https://morencius.com/e/${primaryFile.file_code}`,
+      embed_url: `https://morencius.com/embed/${primaryFile.file_code}`,
       canplay: primaryFile.canplay,
       qualities: qualities,
       screenshots: []
