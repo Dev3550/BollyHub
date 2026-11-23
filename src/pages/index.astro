@@ -219,6 +219,60 @@ function getFastPosterUrl(posterUrl: string) {
 
       // Initial run
       applyFilters();
+
+      // Background real-time sync for newly uploaded movies
+      fetch('/data/movies.json?v=' + Date.now())
+        .then(r => r.json())
+        .then(latestMovies => {
+          if (!Array.isArray(latestMovies)) return;
+          const existingSlugs = new Set(cards.map(c => {
+            const a = c.querySelector('a');
+            return a ? a.getAttribute('href') : '';
+          }));
+
+          let addedAny = false;
+          const grid = document.getElementById('movies-grid');
+          if (!grid) return;
+
+          for (const m of latestMovies) {
+            const slug = m.slug || m.id;
+            const href = `/movie/${slug}/`;
+            if (!existingSlugs.has(href)) {
+              const wrapper = document.createElement('div');
+              wrapper.className = 'movie-card-wrapper';
+              wrapper.setAttribute('data-categories', JSON.stringify(m.categories || []));
+              wrapper.setAttribute('data-title', (m.title || '').toLowerCase());
+              wrapper.setAttribute('data-year', m.release_year || '2024');
+
+              const poster = (m.poster_url && m.poster_url.startsWith('http') && !m.poster_url.includes('vlcsnap'))
+                ? m.poster_url
+                : 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=500&auto=format&fit=crop&q=60';
+              const catTag = (m.categories && m.categories[0]) ? m.categories[0] : 'HD';
+
+              wrapper.innerHTML = `
+                <a href="${href}" class="movie-card">
+                  <div class="card-poster">
+                    <img src="${poster}" alt="${m.title}" loading="lazy" decoding="async" />
+                    <span class="card-badge">${catTag}</span>
+                  </div>
+                  <div class="card-info">
+                    <div class="card-title">${m.title}</div>
+                    <div class="card-meta">
+                      <span>📅 ${m.release_year || '2024'}</span>
+                      <span>⭐ ${m.imdb?.rating || '8.0'}</span>
+                    </div>
+                  </div>
+                </a>
+              `;
+              grid.prepend(wrapper);
+              cards.unshift(wrapper);
+              existingSlugs.add(href);
+              addedAny = true;
+            }
+          }
+          if (addedAny) applyFilters();
+        })
+        .catch(() => {});
     })();
   </script>
 </Layout>
