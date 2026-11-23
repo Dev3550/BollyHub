@@ -1,3 +1,5 @@
-Cloud upload triggered at 2026-11-23T17:30:00Z
+Cloud upload triggered at 2026-11-23T17:38:00Z
 EarnVids account: dev3550
-Hourly cron active: 0 * * * *
+15-minute cron schedule active: */15 * * * *
+Batch size: 50 movies per run
+Total movies in queue: 16000+

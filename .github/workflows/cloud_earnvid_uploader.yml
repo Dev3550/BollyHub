@@ -2,8 +2,8 @@ name: BollyHub 24/7 Cloud EarnVids Uploader
 
 on:
   schedule:
-    # Runs every 1 hour automatically in Microsoft Azure Cloud
-    - cron: '0 * * * *'
+    # Runs every 15 minutes automatically in Microsoft Azure Cloud
+    - cron: '*/15 * * * *'
   push:
     branches:
       - main
@@ -15,7 +15,7 @@ on:
       batch_size:
         description: 'Number of movies/qualities to upload in this run'
         required: false
-        default: '30'
+        default: '50'
 
 jobs:
   upload-to-earnvids:
@@ -38,7 +38,7 @@ jobs:
       - name: Run Cloud EarnVids Bulk Uploader
         env:
           EARNVIDS_KEY: ${{ secrets.EARNVIDS_KEY || '48914lqe3hwneiukt644z' }}
-          BATCH_SIZE: ${{ github.event.inputs.batch_size || '25' }}
+          BATCH_SIZE: ${{ github.event.inputs.batch_size || '50' }}
         run: |
           node cloud_earnvid_uploader.cjs
           node sync_live_uploaded_movies.cjs

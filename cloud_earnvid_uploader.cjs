@@ -13,7 +13,7 @@ try {
 }
 
 const EARNVIDS_KEY = process.env.EARNVIDS_KEY || '48914lqe3hwneiukt644z';
-const BATCH_SIZE = parseInt(process.env.BATCH_SIZE, 10) || 15; // 15 movies/qualities per run
+const BATCH_SIZE = parseInt(process.env.BATCH_SIZE, 10) || 50; // 50 movies/qualities per run (Runs every 15 mins)
 
 // Folder Mapping on EarnVids (dev3550 Account)
 const FOLDER_MAP = {
