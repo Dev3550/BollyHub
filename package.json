@@ -7,7 +7,8 @@
     "build": "astro build",
     "preview": "astro preview",
     "scrape": "node bollyflix_scraper/scraper.js",
-    "sync": "node sync_live_uploaded_movies.cjs"
+    "sync": "node sync_multi_account_catalog.cjs",
+    "prebuild": "node sync_multi_account_catalog.cjs"
   },
   "dependencies": {
     "astro": "^7.4.13",

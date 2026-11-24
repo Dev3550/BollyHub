@@ -7,3 +7,6 @@ test_*.cjs
 test_*.mjs
 scratch_*.mjs
 inspect_*.mjs
+*.mp4
+*.mkv
+temp_upload_*
