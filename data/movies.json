@@ -1,26 +1,27 @@
 [
   {
-    "id": "kama-sutra-a-tale-of-love-1997",
-    "title": "Kama Sutra: A Tale of Love (1997)",
-    "slug": "kama-sutra-a-tale-of-love-1997",
+    "id": "kama-sutra-a-tale-of-love-1996",
+    "title": "Kama Sutra: A Tale of Love (1996)",
+    "slug": "kama-sutra-a-tale-of-love-1996",
     "categories": [
       "BOLLYWOOD"
     ],
-    "release_year": "1997",
+    "release_year": "1996",
     "poster_url": "https://images.metahub.space/poster/medium/tt0116743/img.jpg",
-    "backdrop_url": "https://images.metahub.space/background/medium/tt0116743/img.jpg",
+    "backdrop_url": "https://images.metahub.space/background/medium/tt0116743/img",
     "imdb": {
       "id": "tt0116743",
       "rating": "6.0",
       "title": "Kama Sutra: A Tale of Love",
       "director": "Mira Nair",
       "cast": [
-        "Naveen Andrews",
+        "Indira Varma",
         "Sarita Choudhury",
-        "Indira Varma"
+        "Naveen Andrews",
+        "Rekha"
       ],
       "genres": "Crime, Drama, History",
-      "summary": "Two female friends become sexual rivals at maturity."
+      "summary": "In 16th-century royal India, the intense lifelong bond between a high-born princess and her servant maid crumbles into bitter jealousy and rebellious passion inside palace corridors."
     },
     "earnvid_filecode": "pgr0zchl3kmo",
     "embed_url": "https://morencius.com/embed/pgr0zchl3kmo",
@@ -53,11 +54,12 @@
     "title": "NH 10 (2015)",
     "slug": "nh-10-2015",
     "categories": [
-      "BOLLYWOOD"
+      "BOLLYWOOD",
+      "THRILLER"
     ],
     "release_year": "2015",
     "poster_url": "https://images.metahub.space/poster/medium/tt3742284/img.jpg",
-    "backdrop_url": "https://images.metahub.space/background/medium/tt3742284/img.jpg",
+    "backdrop_url": "https://images.metahub.space/background/medium/tt3742284/img",
     "imdb": {
       "id": "tt3742284",
       "rating": "7.2",
@@ -66,10 +68,11 @@
       "cast": [
         "Anushka Sharma",
         "Neil Bhoopalam",
-        "Darshan Kumaar"
+        "Darshan Kumaar",
+        "Deepti Naval"
       ],
       "genres": "Action, Crime, Drama",
-      "summary": "On their way to a weekend retreat, a married couple find their dream vacation turn into a nightmare when they cross paths with a dangerous gang."
+      "summary": "A weekend getaway takes a terrifying turn when a young couple witnesses a vicious honor killing along Haryana's deserted National Highway 10, plunging them into a fight for survival."
     },
     "earnvid_filecode": "u7hyxf9hpeg5",
     "embed_url": "https://morencius.com/embed/u7hyxf9hpeg5",
@@ -107,19 +110,21 @@
     ],
     "release_year": "2023",
     "poster_url": "https://images.metahub.space/poster/medium/tt15398776/img.jpg",
-    "backdrop_url": "https://images.metahub.space/background/medium/tt15398776/img.jpg",
+    "backdrop_url": "https://images.metahub.space/background/medium/tt15398776/img",
     "imdb": {
       "id": "tt15398776",
-      "rating": "8.2",
+      "rating": "8.9",
       "title": "Oppenheimer",
       "director": "Christopher Nolan",
       "cast": [
         "Cillian Murphy",
         "Emily Blunt",
-        "Matt Damon"
+        "Matt Damon",
+        "Robert Downey Jr.",
+        "Florence Pugh"
       ],
       "genres": "Biography, Drama, History",
-      "summary": "A dramatization of the life story of J. Robert Oppenheimer, the physicist who had a large hand in the development of the atomic bombs that brought an end to World War II."
+      "summary": "The gripping story of theoretical physicist J. Robert Oppenheimer, who led the top-secret Manhattan Project in Los Alamos to construct the atomic bomb, ushering humanity into the nuclear age."
     },
     "earnvid_filecode": "wxp9d9rdeeac",
     "embed_url": "https://morencius.com/embed/wxp9d9rdeeac",
@@ -154,11 +159,11 @@
     "categories": [
       "SOUTH HINDI DUBBED",
       "SOUTH",
-      "DUAL AUDIO"
+      "ACTION"
     ],
     "release_year": "2023",
     "poster_url": "https://images.metahub.space/poster/medium/tt15654328/img.jpg",
-    "backdrop_url": "https://images.metahub.space/background/medium/tt15654328/img.jpg",
+    "backdrop_url": "https://images.metahub.space/background/medium/tt15654328/img",
     "imdb": {
       "id": "tt15654328",
       "rating": "7.2",
@@ -167,10 +172,12 @@
       "cast": [
         "Joseph Vijay",
         "Sanjay Dutt",
-        "Trisha Krishnan"
+        "Arjun Sarja",
+        "Trisha Krishnan",
+        "Gautham Vasudev Menon"
       ],
       "genres": "Action, Crime, Drama",
-      "summary": "Parthiban is a mild-mannered cafe owner who fends off a gang of murderous thugs and gains attention from a drug cartel claiming he was once a part of them."
+      "summary": "Parthiban, a mild-mannered cafe operator and animal rescuer in Himachal Pradesh, becomes the deadly obsession of a ruthless drug cartel who insist he is Leo Das, the legendary assassin of a criminal dynasty."
     },
     "earnvid_filecode": "3m71g7vk5t0j",
     "embed_url": "https://morencius.com/embed/3m71g7vk5t0j",
@@ -205,11 +212,11 @@
     "categories": [
       "SOUTH HINDI DUBBED",
       "SOUTH",
-      "DUAL AUDIO"
+      "ACTION"
     ],
     "release_year": "2021",
     "poster_url": "https://images.metahub.space/poster/medium/tt9389998/img.jpg",
-    "backdrop_url": "https://images.metahub.space/background/medium/tt9389998/img.jpg",
+    "backdrop_url": "https://images.metahub.space/background/medium/tt9389998/img",
     "imdb": {
       "id": "tt9389998",
       "rating": "7.6",
@@ -217,11 +224,12 @@
       "director": "Sukumar",
       "cast": [
         "Allu Arjun",
+        "Rashmika Mandanna",
         "Fahadh Faasil",
-        "Rashmika Mandanna"
+        "Sunil"
       ],
       "genres": "Action, Crime, Drama",
-      "summary": "A labourer rises through the ranks of a red sandalwood smuggling syndicate, making some powerful enemies in the process."
+      "summary": "Pushpa Raj, a fearless daily-wage woodsman in the dense Seshachalam forests, rises through unyielding grit and cunning to reign as the supreme boss of a dangerous red sandalwood smuggling empire."
     },
     "earnvid_filecode": "26nk4ltny5it",
     "embed_url": "https://morencius.com/embed/26nk4ltny5it",
@@ -256,11 +264,11 @@
     "categories": [
       "SOUTH HINDI DUBBED",
       "SOUTH",
-      "DUAL AUDIO"
+      "ACTION"
     ],
     "release_year": "2018",
     "poster_url": "https://images.metahub.space/poster/medium/tt7838252/img.jpg",
-    "backdrop_url": "https://images.metahub.space/background/medium/tt7838252/img.jpg",
+    "backdrop_url": "https://images.metahub.space/background/medium/tt7838252/img",
     "imdb": {
       "id": "tt7838252",
       "rating": "8.1",
@@ -269,10 +277,11 @@
       "cast": [
         "Yash",
         "Srinidhi Shetty",
-        "Garuda Ram"
+        "Ramachandra Raju",
+        "Anant Nag"
       ],
       "genres": "Action, Crime, Drama",
-      "summary": "In the 1970s, a gangster named Rocky goes undercover as a slave to assassinate the owner of a notorious gold mine known as the Kolar Gold Fields."
+      "summary": "Driven by a childhood vow to his dying mother, Rocky rises as Bombay's most feared underworld ruler before going undercover as an enslaved miner in the brutal Kolar Gold Fields to liberate its people."
     },
     "earnvid_filecode": "n9vls47ejnhl",
     "embed_url": "https://morencius.com/embed/n9vls47ejnhl",
@@ -307,11 +316,11 @@
     "categories": [
       "SOUTH HINDI DUBBED",
       "SOUTH",
-      "DUAL AUDIO"
+      "ACTION"
     ],
     "release_year": "2022",
     "poster_url": "https://images.metahub.space/poster/medium/tt15327088/img.jpg",
-    "backdrop_url": "https://images.metahub.space/background/medium/tt15327088/img.jpg",
+    "backdrop_url": "https://images.metahub.space/background/medium/tt15327088/img",
     "imdb": {
       "id": "tt15327088",
       "rating": "8.1",
@@ -319,11 +328,12 @@
       "director": "Rishab Shetty",
       "cast": [
         "Rishab Shetty",
+        "Sapthami Gowda",
         "Kishore Kumar G.",
         "Achyuth Kumar"
       ],
       "genres": "Action, Adventure, Drama",
-      "summary": "When greed paves the way for betrayal, scheming and murder, a young tribal reluctantly dons the traditions of his ancestors to seek justice."
+      "summary": "In a coastal Karnataka forest village, a Kambala champion clashes with an upright forest officer over customary lands, invoking the terrifying wrath and supernatural retribution of the Daiva spirit."
     },
     "earnvid_filecode": "ygwvxj2ruyd3",
     "embed_url": "https://morencius.com/embed/ygwvxj2ruyd3",
@@ -352,126 +362,6 @@
     "screenshots": []
   },
   {
-    "id": "her-man-1930",
-    "title": "Her Man (1930)",
-    "slug": "her-man-1930",
-    "categories": [
-      "HOLLYWOOD",
-      "DUAL AUDIO"
-    ],
-    "release_year": "1930",
-    "poster_url": "https://images.metahub.space/poster/medium/tt0020966/img.jpg",
-    "backdrop_url": "https://images.metahub.space/background/medium/tt0020966/img.jpg",
-    "imdb": {
-      "id": "tt0020966",
-      "rating": "6.5",
-      "title": "Her Man",
-      "director": "Tay Garnett",
-      "cast": [
-        "Helen Twelvetrees",
-        "Phillips Holmes",
-        "Marjorie Rambeau",
-        "James Gleason"
-      ],
-      "genres": "Drama",
-      "summary": "Paris bargirl with tough \"protector\" falls for young sailor."
-    },
-    "earnvid_filecode": "ibz43gk34dv2",
-    "embed_url": "https://morencius.com/embed/ibz43gk34dv2",
-    "canplay": 1,
-    "primary_account": "dev3550",
-    "qualities": [
-      {
-        "quality_name": "720P WEB-DL",
-        "file_id": "ibz43gk34dv2",
-        "filecode": "ibz43gk34dv2",
-        "account": "dev3550",
-        "account_label": "Primary Node (dev3550)",
-        "embed_url": "https://morencius.com/embed/ibz43gk34dv2",
-        "mirrors": [
-          {
-            "provider": "EarnVids Fast Direct Download (dev3550)",
-            "url": "https://morencius.com/d/ibz43gk34dv2"
-          },
-          {
-            "provider": "EarnVids High Speed Stream (dev3550)",
-            "url": "https://morencius.com/file/ibz43gk34dv2"
-          }
-        ]
-      },
-      {
-        "quality_name": "720P WEB-DL",
-        "file_id": "y56cj7otytn7",
-        "filecode": "y56cj7otytn7",
-        "account": "dev3550",
-        "account_label": "Primary Node (dev3550)",
-        "embed_url": "https://morencius.com/embed/y56cj7otytn7",
-        "mirrors": [
-          {
-            "provider": "EarnVids Fast Direct Download (dev3550)",
-            "url": "https://morencius.com/d/y56cj7otytn7"
-          },
-          {
-            "provider": "EarnVids High Speed Stream (dev3550)",
-            "url": "https://morencius.com/file/y56cj7otytn7"
-          }
-        ]
-      }
-    ],
-    "screenshots": []
-  },
-  {
-    "id": "kiku-chiranjeevi-2026",
-    "title": "Kiku Chiranjeevi (2026)",
-    "slug": "kiku-chiranjeevi-2026",
-    "categories": [
-      "SOUTH HINDI DUBBED",
-      "SOUTH",
-      "DUAL AUDIO"
-    ],
-    "release_year": "2026",
-    "poster_url": "https://images.metahub.space/poster/medium/tt41740111/img.jpg",
-    "backdrop_url": "https://images.metahub.space/background/medium/tt41740111/img.jpg",
-    "imdb": {
-      "id": "tt41740111",
-      "rating": "8.3",
-      "title": "Kiku Chiranjeevi",
-      "director": "Shubha Sai Venkat",
-      "cast": [
-        "Kiku Yanamala",
-        "Kashish Khan",
-        "Easwari Rao"
-      ],
-      "genres": "Thriller, Drama",
-      "summary": "A young man named Chiru, born with dextrocardia-a rare condition where his heart is on the right side of his chest faces struggles and challenges as he works to overcome his condition and achieve his goals."
-    },
-    "earnvid_filecode": "m3qwozgyrc0x",
-    "embed_url": "https://morencius.com/embed/m3qwozgyrc0x",
-    "canplay": 1,
-    "primary_account": "dev3550",
-    "qualities": [
-      {
-        "quality_name": "720P WEB-DL",
-        "file_id": "m3qwozgyrc0x",
-        "filecode": "m3qwozgyrc0x",
-        "account": "dev3550",
-        "account_label": "Primary Node (dev3550)",
-        "embed_url": "https://morencius.com/embed/m3qwozgyrc0x",
-        "mirrors": [
-          {
-            "provider": "EarnVids Fast Direct Download (dev3550)",
-            "url": "https://morencius.com/d/m3qwozgyrc0x"
-          },
-          {
-            "provider": "EarnVids High Speed Stream (dev3550)",
-            "url": "https://morencius.com/file/m3qwozgyrc0x"
-          }
-        ]
-      }
-    ],
-    "screenshots": []
-  },
-  {
     "id": "m-s-dhoni-the-untold-story-2016",
     "title": "M.S. Dhoni: The Untold Story (2016)",
     "slug": "m-s-dhoni-the-untold-story-2016",
@@ -480,7 +370,7 @@
     ],
     "release_year": "2016",
     "poster_url": "https://images.metahub.space/poster/medium/tt4169250/img.jpg",
-    "backdrop_url": "https://images.metahub.space/background/medium/tt4169250/img.jpg",
+    "backdrop_url": "https://images.metahub.space/background/medium/tt4169250/img",
     "imdb": {
       "id": "tt4169250",
       "rating": "8.0",
@@ -489,10 +379,11 @@
       "cast": [
         "Sushant Singh Rajput",
         "Kiara Advani",
-        "Disha Patani"
+        "Disha Patani",
+        "Anupam Kher"
       ],
       "genres": "Biography, Drama, Sport",
-      "summary": "The untold story of Mahendra Singh Dhoni's journey from ticket collector to trophy collector - the world-cup-winning captain of the Indian Cricket Team."
+      "summary": "The inspiring biopic of Mahendra Singh Dhoni, tracing his journey from a small-town railway ticket collector in Ranchi to captaining the Indian national cricket team to historic World Cup victories."
     },
     "earnvid_filecode": "6odg8d38vy1j",
     "embed_url": "https://morencius.com/embed/6odg8d38vy1j",
@@ -529,7 +420,7 @@
     ],
     "release_year": "2019",
     "poster_url": "https://images.metahub.space/poster/medium/tt9052870/img.jpg",
-    "backdrop_url": "https://images.metahub.space/background/medium/tt9052870/img.jpg",
+    "backdrop_url": "https://images.metahub.space/background/medium/tt9052870/img",
     "imdb": {
       "id": "tt9052870",
       "rating": "8.3",
@@ -538,10 +429,12 @@
       "cast": [
         "Sushant Singh Rajput",
         "Shraddha Kapoor",
-        "Varun Sharma"
+        "Varun Sharma",
+        "Prateik Babbar",
+        "Tahir Raj Bhasin"
       ],
       "genres": "Comedy, Drama, Romance",
-      "summary": "A tragic incident forces Anirudh, a middle-aged man, to take a trip down memory lane and reminisce his college days along with his friends, who were labelled as losers."
+      "summary": "Following a tragedy, a middle-aged father reunites his estranged university hostel gang—the self-proclaimed \"Losers\"—to recount their glory days and teach his son that failure is never the end of life."
     },
     "earnvid_filecode": "ysw5lj1j43m5",
     "embed_url": "https://morencius.com/embed/ysw5lj1j43m5",
@@ -578,7 +471,7 @@
     ],
     "release_year": "2009",
     "poster_url": "https://images.metahub.space/poster/medium/tt1187043/img.jpg",
-    "backdrop_url": "https://images.metahub.space/background/medium/tt1187043/img.jpg",
+    "backdrop_url": "https://images.metahub.space/background/medium/tt1187043/img",
     "imdb": {
       "id": "tt1187043",
       "rating": "8.4",
@@ -586,11 +479,13 @@
       "director": "Rajkumar Hirani",
       "cast": [
         "Aamir Khan",
-        "Madhavan",
-        "Mona Singh"
+        "R. Madhavan",
+        "Sharman Joshi",
+        "Kareena Kapoor",
+        "Boman Irani"
       ],
       "genres": "Comedy, Drama",
-      "summary": "Two friends search for a brilliant, free-spirited classmate whose unconventional approach to engineering school changed their lives and challenged a rigid education system."
+      "summary": "Two college friends embark on a road trip in search of their unconventional buddy Rancho, reminiscing about their engineering days and the life lessons he taught them to chase excellence rather than success."
     },
     "earnvid_filecode": "cf2282y17ecd",
     "embed_url": "https://morencius.com/embed/cf2282y17ecd",
@@ -623,19 +518,25 @@
     "title": "Hate Story 2 (2014)",
     "slug": "hate-story-2-2014",
     "categories": [
-      "BOLLYWOOD"
+      "BOLLYWOOD",
+      "THRILLER"
     ],
     "release_year": "2014",
-    "poster_url": "https://images.metahub.space/poster/medium/tt3778008/img.jpg",
-    "backdrop_url": "https://images.metahub.space/background/medium/tt3778008/img.jpg",
+    "poster_url": "https://images.metahub.space/poster/medium/tt3619772/img.jpg",
+    "backdrop_url": "https://images.metahub.space/background/medium/tt3619772/img",
     "imdb": {
-      "id": "tt3778008",
-      "rating": "7.8",
+      "id": "tt3619772",
+      "rating": "4.4",
       "title": "Hate Story 2",
-      "director": "N/A",
-      "cast": [],
-      "genres": "Action, Drama",
-      "summary": "Full movie available for streaming and high-speed direct download in HD."
+      "director": "Vishal Pandya",
+      "cast": [
+        "Jay Bhanushali",
+        "Surveen Chawla",
+        "Sushant Singh",
+        "Siddharth Gupta"
+      ],
+      "genres": "Drama, Thriller",
+      "summary": "Kept captive and tortured by a ruthless politician, a young woman orchestrates a deadly campaign of vengeance after her true love is slain before her eyes."
     },
     "earnvid_filecode": "rxeqngyr1ywg",
     "embed_url": "https://morencius.com/embed/rxeqngyr1ywg",
@@ -682,44 +583,156 @@
     "screenshots": []
   },
   {
-    "id": "labour-chownk-2019",
-    "title": "Labour Chownk (2019)",
-    "slug": "labour-chownk-2019",
+    "id": "don-2022",
+    "title": "Don (2022)",
+    "slug": "don-2022",
     "categories": [
-      "BOLLYWOOD"
+      "SOUTH HINDI DUBBED",
+      "SOUTH",
+      "COMEDY"
     ],
-    "release_year": "2019",
-    "poster_url": "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=500&auto=format&fit=crop&q=60",
-    "backdrop_url": null,
+    "release_year": "2022",
+    "poster_url": "https://images.metahub.space/poster/medium/tt10709484/img.jpg",
+    "backdrop_url": "https://images.metahub.space/background/medium/tt10709484/img",
     "imdb": {
-      "id": "",
-      "rating": "7.8",
-      "title": "Labour Chownk",
-      "director": "N/A",
-      "cast": [],
-      "genres": "Drama, Action",
-      "summary": "Full HD high-speed online stream available on BollyHub."
+      "id": "tt10709484",
+      "rating": "6.8",
+      "title": "Don",
+      "director": "Cibi Chakaravarthi",
+      "cast": [
+        "Sivakarthikeyan",
+        "Priyanka Arulmohan",
+        "S.J. Suryah",
+        "Samuthirakani"
+      ],
+      "genres": "Action, Comedy, Drama",
+      "summary": "A carefree college student clashes with an authoritarian professor while searching for his true calling in life and coming to terms with his father's silent sacrifices."
     },
-    "earnvid_filecode": "bf950frj0gkl",
-    "embed_url": "https://morencius.com/embed/bf950frj0gkl",
+    "earnvid_filecode": "fbnv350wjxbe",
+    "embed_url": "https://morencius.com/embed/fbnv350wjxbe",
     "canplay": 1,
-    "primary_account": "dev3550",
+    "primary_account": "Dev333",
     "qualities": [
       {
-        "quality_name": "720P WEB-DL [500MB]",
-        "file_id": "bf950frj0gkl",
-        "filecode": "bf950frj0gkl",
-        "account": "dev3550",
-        "account_label": "Primary Node (dev3550)",
-        "embed_url": "https://morencius.com/embed/bf950frj0gkl",
+        "quality_name": "720P WEB-DL",
+        "file_id": "fbnv350wjxbe",
+        "filecode": "fbnv350wjxbe",
+        "account": "Dev333",
+        "account_label": "Secondary Node (Dev333)",
+        "embed_url": "https://morencius.com/embed/fbnv350wjxbe",
         "mirrors": [
           {
-            "provider": "EarnVids Fast Direct Download (dev3550)",
-            "url": "https://morencius.com/d/bf950frj0gkl"
+            "provider": "EarnVids Fast Direct Download (Dev333)",
+            "url": "https://morencius.com/d/fbnv350wjxbe"
           },
           {
-            "provider": "EarnVids High Speed Stream (dev3550)",
-            "url": "https://morencius.com/file/bf950frj0gkl"
+            "provider": "EarnVids High Speed Stream (Dev333)",
+            "url": "https://morencius.com/file/fbnv350wjxbe"
+          }
+        ]
+      }
+    ],
+    "screenshots": []
+  },
+  {
+    "id": "housefull-4-2019",
+    "title": "Housefull 4 (2019)",
+    "slug": "housefull-4-2019",
+    "categories": [
+      "BOLLYWOOD",
+      "COMEDY"
+    ],
+    "release_year": "2019",
+    "poster_url": "https://images.metahub.space/poster/medium/tt7721946/img.jpg",
+    "backdrop_url": "https://images.metahub.space/background/medium/tt7721946/img",
+    "imdb": {
+      "id": "tt7721946",
+      "rating": "3.6",
+      "title": "Housefull 4",
+      "director": "Farhad Samji",
+      "cast": [
+        "Akshay Kumar",
+        "Riteish Deshmukh",
+        "Bobby Deol",
+        "Kriti Sanon",
+        "Pooja Hegde",
+        "Kriti Kharbanda"
+      ],
+      "genres": "Action, Comedy, Fantasy",
+      "summary": "Three couples getting married in modern-day London discover through sudden past-life memories that their prospective marriages are jumbled up due to treachery back in 1419."
+    },
+    "earnvid_filecode": "jvgjhn7vjp0t",
+    "embed_url": "https://morencius.com/embed/jvgjhn7vjp0t",
+    "canplay": 1,
+    "primary_account": "Dev333",
+    "qualities": [
+      {
+        "quality_name": "720P WEB-DL",
+        "file_id": "jvgjhn7vjp0t",
+        "filecode": "jvgjhn7vjp0t",
+        "account": "Dev333",
+        "account_label": "Secondary Node (Dev333)",
+        "embed_url": "https://morencius.com/embed/jvgjhn7vjp0t",
+        "mirrors": [
+          {
+            "provider": "EarnVids Fast Direct Download (Dev333)",
+            "url": "https://morencius.com/d/jvgjhn7vjp0t"
+          },
+          {
+            "provider": "EarnVids High Speed Stream (Dev333)",
+            "url": "https://morencius.com/file/jvgjhn7vjp0t"
+          }
+        ]
+      }
+    ],
+    "screenshots": []
+  },
+  {
+    "id": "bhaiaji-superhit-2018",
+    "title": "Bhaiaji Superhit (2018)",
+    "slug": "bhaiaji-superhit-2018",
+    "categories": [
+      "BOLLYWOOD",
+      "COMEDY"
+    ],
+    "release_year": "2018",
+    "poster_url": "https://images.metahub.space/poster/medium/tt2150177/img.jpg",
+    "backdrop_url": "https://images.metahub.space/background/medium/tt2150177/img",
+    "imdb": {
+      "id": "tt2150177",
+      "rating": "4.6",
+      "title": "Bhaiaji Superhit",
+      "director": "Neerraj Pathak",
+      "cast": [
+        "Sunny Deol",
+        "Preity Zinta",
+        "Ameesha Patel",
+        "Arshad Warsi",
+        "Shreyas Talpade"
+      ],
+      "genres": "Action, Comedy",
+      "summary": "A notorious Varanasi gangster resolves to win back his estranged wife by hiring a desperate movie director to turn him into a celebrated Bollywood action superstar."
+    },
+    "earnvid_filecode": "hadjr3xy2rta",
+    "embed_url": "https://morencius.com/embed/hadjr3xy2rta",
+    "canplay": 1,
+    "primary_account": "Dev333",
+    "qualities": [
+      {
+        "quality_name": "720P WEB-DL",
+        "file_id": "hadjr3xy2rta",
+        "filecode": "hadjr3xy2rta",
+        "account": "Dev333",
+        "account_label": "Secondary Node (Dev333)",
+        "embed_url": "https://morencius.com/embed/hadjr3xy2rta",
+        "mirrors": [
+          {
+            "provider": "EarnVids Fast Direct Download (Dev333)",
+            "url": "https://morencius.com/d/hadjr3xy2rta"
+          },
+          {
+            "provider": "EarnVids High Speed Stream (Dev333)",
+            "url": "https://morencius.com/file/hadjr3xy2rta"
           }
         ]
       }
@@ -731,27 +744,29 @@
     "title": "Batla House (2019)",
     "slug": "batla-house-2019",
     "categories": [
-      "BOLLYWOOD"
+      "BOLLYWOOD",
+      "ACTION"
     ],
     "release_year": "2019",
     "poster_url": "https://images.metahub.space/poster/medium/tt8869978/img.jpg",
-    "backdrop_url": "https://images.metahub.space/background/medium/tt8869978/img.jpg",
+    "backdrop_url": "https://images.metahub.space/background/medium/tt8869978/img",
     "imdb": {
       "id": "tt8869978",
       "rating": "7.2",
       "title": "Batla House",
       "director": "Nikkhil Advani",
       "cast": [
-        "Mrunal Thakur",
         "John Abraham",
-        "Ravi Kishan"
+        "Mrunal Thakur",
+        "Ravi Kishan",
+        "Nora Fatehi"
       ],
       "genres": "Action, Crime, Drama",
-      "summary": "In 2008, a violent shootout with terror suspects leaves one police officer struggling to hunt down the fugitives and justify the police action."
+      "summary": "Following the controversial 2008 shootout in Delhi, decorated police officer Sanjeev Kumar battles intense political scrutiny, media trials, and personal trauma to uncover the real truth."
     },
     "earnvid_filecode": "97a91qu105uf",
     "embed_url": "https://morencius.com/embed/97a91qu105uf",
-    "canplay": 0,
+    "canplay": 1,
     "primary_account": "Dev333",
     "qualities": [
       {
@@ -780,11 +795,12 @@
     "title": "Dream Girl (2019)",
     "slug": "dream-girl-2019",
     "categories": [
-      "BOLLYWOOD"
+      "BOLLYWOOD",
+      "COMEDY"
     ],
     "release_year": "2019",
     "poster_url": "https://images.metahub.space/poster/medium/tt9248940/img.jpg",
-    "backdrop_url": "https://images.metahub.space/background/medium/tt9248940/img.jpg",
+    "backdrop_url": "https://images.metahub.space/background/medium/tt9248940/img",
     "imdb": {
       "id": "tt9248940",
       "rating": "7.0",
@@ -793,10 +809,12 @@
       "cast": [
         "Ayushmann Khurrana",
         "Nushrratt Bharuccha",
-        "Annu Kapoor"
+        "Annu Kapoor",
+        "Manjot Singh",
+        "Vijay Raaz"
       ],
       "genres": "Comedy, Romance",
-      "summary": "Rom-com Movie, directed by Raaj Shaandilyaa, stars Ayushmann Khurrana who plays a 'dream girl'. In every love story, there is always one trying to win the heart of the other, who could be the 'dream girl'."
+      "summary": "A gifted young man takes a job at a female friendship call center using the persona of \"Pooja\", captivating an array of eccentric suitors and triggering uproarious town-wide chaos."
     },
     "earnvid_filecode": "7sa89pebmwuh",
     "embed_url": "https://morencius.com/embed/7sa89pebmwuh",
@@ -829,11 +847,12 @@
     "title": "The Sky Is Pink (2019)",
     "slug": "the-sky-is-pink-2019",
     "categories": [
-      "BOLLYWOOD"
+      "BOLLYWOOD",
+      "DRAMA"
     ],
     "release_year": "2019",
     "poster_url": "https://images.metahub.space/poster/medium/tt8902990/img.jpg",
-    "backdrop_url": "https://images.metahub.space/background/medium/tt8902990/img.jpg",
+    "backdrop_url": "https://images.metahub.space/background/medium/tt8902990/img",
     "imdb": {
       "id": "tt8902990",
       "rating": "7.6",
@@ -842,10 +861,11 @@
       "cast": [
         "Priyanka Chopra Jonas",
         "Farhan Akhtar",
-        "Zaira Wasim"
+        "Zaira Wasim",
+        "Rohit Saraf"
       ],
-      "genres": "Drama, Romance",
-      "summary": "Based on the love story of a couple spanning 25 years and told through the lens of their spunky teenage daughter Aisha Chaudhary, who was diagnosed with pulmonary fibrosis."
+      "genres": "Biography, Drama, Romance",
+      "summary": "Told through the vibrant lens of a deceased teenage daughter, the film traces her parents' unconditional love, laughter, and unbreakable resilience over twenty-five years."
     },
     "earnvid_filecode": "bjcp7h9pi2ma",
     "embed_url": "https://morencius.com/embed/bjcp7h9pi2ma",
@@ -881,20 +901,21 @@
       "BOLLYWOOD"
     ],
     "release_year": "1991",
-    "poster_url": "https://images.metahub.space/poster/medium/tt0102828/img.jpg",
-    "backdrop_url": "https://images.metahub.space/background/medium/tt0102828/img.jpg",
+    "poster_url": "https://images.metahub.space/poster/medium/tt0156985/img.jpg",
+    "backdrop_url": "https://images.metahub.space/background/medium/tt0156985/img",
     "imdb": {
-      "id": "tt0102828",
-      "rating": "7.1",
+      "id": "tt0156985",
+      "rating": "6.4",
       "title": "Sadak",
       "director": "Mahesh Bhatt",
       "cast": [
         "Sanjay Dutt",
         "Pooja Bhatt",
-        "Sadashiv Amrapurkar"
+        "Sadashiv Amrapurkar",
+        "Deepak Tijori"
       ],
-      "genres": "Action, Drama, Romance",
-      "summary": "A taxi driver falls in love with a woman forced into prostitution and fights a ruthless underworld figure to rescue her."
+      "genres": "Action, Crime, Drama",
+      "summary": "Ravi, an insomniac taxi driver traumatized by his sister's death, falls in love with Pooja, a girl coerced into sex work, and faces off against the sinister brothel kingpin Maharani to rescue her."
     },
     "earnvid_filecode": "tr5xg02is0eq",
     "embed_url": "https://morencius.com/embed/tr5xg02is0eq",
@@ -927,23 +948,26 @@
     "title": "Laal Kaptaan (2019)",
     "slug": "laal-kaptaan-2019",
     "categories": [
-      "BOLLYWOOD"
+      "BOLLYWOOD",
+      "ACTION"
     ],
     "release_year": "2019",
-    "poster_url": "https://images.metahub.space/poster/medium/tt8543452/img.jpg",
-    "backdrop_url": "https://images.metahub.space/background/medium/tt8543452/img.jpg",
+    "poster_url": "https://images.metahub.space/poster/medium/tt9052960/img.jpg",
+    "backdrop_url": "https://images.metahub.space/background/medium/tt9052960/img",
     "imdb": {
-      "id": "tt8543452",
-      "rating": "6.2",
+      "id": "tt9052960",
+      "rating": "7.2",
       "title": "Laal Kaptaan",
       "director": "Navdeep Singh",
       "cast": [
         "Saif Ali Khan",
+        "Zoya Hussain",
         "Manav Vij",
-        "Zoya Hussain"
+        "Deepak Dobriyal",
+        "Simone Singh"
       ],
       "genres": "Action, Adventure, Drama",
-      "summary": "Set in 18th century India, a relentless bounty hunter Naga Sadhu tracks down an old enemy across treacherous lands."
+      "summary": "Across the lawless 18th-century ravines of Bundelkhand, a fierce Naga Sadhu bounty hunter rides on a merciless vendetta against a treacherous warlord who massacred his clan decades ago."
     },
     "earnvid_filecode": "42k1c8e4wv43",
     "embed_url": "https://morencius.com/embed/42k1c8e4wv43",
@@ -980,7 +1004,7 @@
     ],
     "release_year": "2019",
     "poster_url": "https://images.metahub.space/poster/medium/tt8291224/img.jpg",
-    "backdrop_url": "https://images.metahub.space/background/medium/tt8291224/img.jpg",
+    "backdrop_url": "https://images.metahub.space/background/medium/tt8291224/img",
     "imdb": {
       "id": "tt8291224",
       "rating": "8.2",
@@ -989,10 +1013,12 @@
       "cast": [
         "Vicky Kaushal",
         "Paresh Rawal",
-        "Yami Gautam"
+        "Yami Gautam",
+        "Mohit Raina",
+        "Kirti Kulhari"
       ],
       "genres": "Action, Drama, History",
-      "summary": "Indian army special forces execute a covert operation against terrorist bases in retaliation for the Uri attack."
+      "summary": "Divided into five chapters, Major Vihaan Singh Shergill commands an elite Para Special Forces detachment executing a high-risk covert surgical strike deep into enemy territory following the Uri base attack."
     },
     "earnvid_filecode": "oe1b9he91p0f",
     "embed_url": "https://morencius.com/embed/oe1b9he91p0f",
@@ -1025,23 +1051,26 @@
     "title": "Shagird (2011)",
     "slug": "shagird-2011",
     "categories": [
-      "BOLLYWOOD"
+      "BOLLYWOOD",
+      "CRIME"
     ],
     "release_year": "2011",
-    "poster_url": "https://images.metahub.space/poster/medium/tt1869687/img.jpg",
-    "backdrop_url": "https://images.metahub.space/background/medium/tt1869687/img.jpg",
+    "poster_url": "https://images.metahub.space/poster/medium/tt1828289/img.jpg",
+    "backdrop_url": "https://images.metahub.space/background/medium/tt1828289/img",
     "imdb": {
-      "id": "tt1869687",
-      "rating": "7.2",
+      "id": "tt1828289",
+      "rating": "7.0",
       "title": "Shagird",
       "director": "Tigmanshu Dhulia",
       "cast": [
         "Nana Patekar",
         "Mohit Ahlawat",
-        "Anurag Kashyap"
+        "Rimi Sen",
+        "Anurag Kashyap",
+        "Zakir Hussain"
       ],
-      "genres": "Action, Crime, Thriller",
-      "summary": "A seasoned Delhi crime branch officer mentors a rookie while maneuvering through deadly political conspiracies."
+      "genres": "Action, Crime, Drama",
+      "summary": "A rookie sub-inspector joins the Delhi Police Crime Branch under Hanumant Singh, a legendary encounter specialist whose unorthodox methods blur the line between upholding law and criminal extortion."
     },
     "earnvid_filecode": "vpdlu5z44xvd",
     "embed_url": "https://morencius.com/embed/vpdlu5z44xvd",
@@ -1074,23 +1103,25 @@
     "title": "Halahal (2020)",
     "slug": "halahal-2020",
     "categories": [
-      "BOLLYWOOD"
+      "BOLLYWOOD",
+      "MYSTERY"
     ],
     "release_year": "2020",
-    "poster_url": "https://images.metahub.space/poster/medium/tt13083652/img.jpg",
-    "backdrop_url": "https://images.metahub.space/background/medium/tt13083652/img.jpg",
+    "poster_url": "https://images.metahub.space/poster/medium/tt9875128/img.jpg",
+    "backdrop_url": "https://images.metahub.space/background/medium/tt9875128/img",
     "imdb": {
-      "id": "tt13083652",
-      "rating": "7.1",
+      "id": "tt9875128",
+      "rating": "7.0",
       "title": "Halahal",
       "director": "Randeep Jha",
       "cast": [
         "Barun Sobti",
         "Sachin Khedekar",
+        "Purnendu Bhattacharya",
         "Anuradha Mukherjee"
       ],
-      "genres": "Crime, Mystery, Thriller",
-      "summary": "A grief-stricken father teams up with a cynical police officer to investigate the dark conspiracy behind his daughter's death."
+      "genres": "Crime, Drama, Mystery",
+      "summary": "When a medical student's suspicious expressway demise is hastily ruled a suicide, her heartbroken father hires a cynical cop to expose an all-powerful educational fraud syndicate."
     },
     "earnvid_filecode": "6a6pj8c7s4bq",
     "embed_url": "https://morencius.com/embed/6a6pj8c7s4bq",
