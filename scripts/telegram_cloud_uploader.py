@@ -188,6 +188,356 @@ def fetch_bollyspice_cover(title):
         print(f"  ⚠️ BollySpice cover fetch warning: {e}")
     return None
 
+def clean_movie_title(raw_title):
+    clean = re.sub(r'^(?:Download|Watch)\s+', '', raw_title or "", flags=re.IGNORECASE)
+    clean = re.sub(r'[\{\[\(].*?[\}\]\)]', '', clean)
+    clean = re.sub(r'~\s*BollyFlix.*$', '', clean, flags=re.IGNORECASE)
+    clean = re.split(r'\s+(?:480p|720p|1080p|2160p|WEB-DL|HDRip|BluRay|HDTC|Pre-DVDRip|Full Movie|Dual Audio|Hindi|Movie)', clean, flags=re.IGNORECASE)[0].strip()
+    return clean
+
+def extract_from_bollyflix_html(html, page_url):
+    from bs4 import BeautifulSoup
+    soup = BeautifulSoup(html, "html.parser")
+    raw_title = ""
+    h1 = soup.find(["h1", "h2"], class_=lambda c: c and ("entry-title" in c or "title" in c))
+    if h1:
+        raw_title = h1.get_text().strip()
+    if not raw_title:
+        t_tag = soup.find("title")
+        if t_tag:
+            raw_title = t_tag.get_text().strip()
+            
+    clean_title = clean_movie_title(raw_title)
+    year_num = parse_year_num(raw_title)
+    
+    # Poster
+    poster_url = None
+    meta_img = soup.find("meta", property="og:image")
+    if meta_img and meta_img.get("content"):
+        poster_url = meta_img["content"]
+    if not poster_url:
+        for img in soup.find_all("img"):
+            src = img.get("src") or img.get("data-src") or ""
+            if src and any(k in src.lower() for k in ["poster", "cover", "uploads"]) and not any(k in src.lower() for k in ["logo", "icon", "banner"]):
+                poster_url = src
+                break
+                
+    # Download Qualities
+    qualities = []
+    headings = soup.find_all(["h5", "h4", "h3", "p", "div"])
+    for h in headings:
+        txt = h.get_text().lower()
+        if any(q in txt for q in ["720p", "480p", "1080p"]):
+            next_p = h.find_next(["p", "div"])
+            links_to_search = []
+            if next_p:
+                links_to_search.extend(next_p.find_all("a", href=True))
+            links_to_search.extend(h.find_all("a", href=True))
+            for a in links_to_search:
+                href = a["href"].strip()
+                label = a.get_text().strip()
+                if any(k in href.lower() for k in ["fastdlserver", "fast-dl", "gdflix", "instadl", "linksmod"]) or "dl" in a.get("class", []):
+                    q_name = "720p HD" if "720p" in txt else ("480p SD" if "480p" in txt else "1080p FHD")
+                    qualities.append({
+                        "quality": q_name,
+                        "url": href,
+                        "label": label
+                    })
+                    
+    if not qualities:
+        for a in soup.find_all("a", href=True):
+            href = a["href"].strip()
+            if any(k in href.lower() for k in ["fastdlserver", "fast-dl", "gdflix", "instadl", "linksmod"]):
+                qualities.append({
+                    "quality": "720p HD",
+                    "url": href,
+                    "label": a.get_text().strip()
+                })
+                break
+                
+    chosen = None
+    for pref in ["720p", "480p", "1080p"]:
+        for q in qualities:
+            if pref in q["quality"].lower():
+                chosen = q
+                break
+        if chosen:
+            break
+    if not chosen and qualities:
+        chosen = qualities[0]
+        
+    slug = page_url.rstrip("/").split("/")[-1].replace(".html", "").replace("download-", "")
+    cat = "Hollywood" if any(w in raw_title.lower() for w in ["dual", "english", "hollywood"]) else ("South Hindi Dubbed" if any(w in raw_title.lower() for w in ["south", "telugu", "tamil"]) else "Bollywood")
+
+    return {
+        "slug": slug,
+        "title": clean_title,
+        "raw_title": raw_title,
+        "year": str(year_num) if year_num > 1900 else "2024",
+        "year_num": year_num,
+        "category": cat,
+        "qualityName": chosen["quality"] if chosen else "720p HD",
+        "fastdlUrl": chosen["url"] if chosen else None,
+        "fastdlPagesUrl": chosen["url"] if chosen else None,
+        "poster_url": poster_url,
+        "imdb": {}
+    }
+
+def extract_from_bollyspice_html(html, page_url):
+    from bs4 import BeautifulSoup
+    soup = BeautifulSoup(html, "html.parser")
+    h1 = soup.find(["h1", "h2"], id="news-title") or soup.find("h1")
+    raw_title = h1.get_text().strip() if h1 else (soup.find("title").get_text().strip() if soup.find("title") else "Movie")
+    
+    clean_title = clean_movie_title(raw_title)
+    year_num = parse_year_num(raw_title)
+    
+    poster_url = None
+    meta_img = soup.find("meta", property="og:image")
+    if meta_img and meta_img.get("content"):
+        poster_url = meta_img["content"]
+    if not poster_url:
+        st_img = soup.select_one(".story_img img, .full-story img")
+        if st_img and st_img.get("src"):
+            poster_url = st_img["src"]
+            if poster_url.startswith("/"):
+                poster_url = f"https://bollyspice.in{poster_url}"
+                
+    qualities = []
+    for a in soup.find_all("a", href=True):
+        href = a["href"].strip()
+        txt = a.get_text().lower()
+        if any(k in href.lower() for k in ["nexdrive", "fastdl", "gdflix", "drive"]):
+            q_name = "720p HD" if "720p" in txt else ("480p SD" if "480p" in txt else ("1080p FHD" if "1080p" in txt else "HD"))
+            qualities.append({
+                "quality": q_name,
+                "url": href,
+                "label": a.get_text().strip()
+            })
+            
+    chosen = None
+    for pref in ["720p", "480p", "1080p"]:
+        for q in qualities:
+            if pref in q["quality"].lower():
+                chosen = q
+                break
+        if chosen:
+            break
+    if not chosen and qualities:
+        chosen = qualities[0]
+        
+    slug = page_url.rstrip("/").split("/")[-1].replace(".html", "")
+    cat = "Hollywood" if any(w in raw_title.lower() for w in ["dual", "english", "hollywood"]) else ("South Hindi Dubbed" if any(w in raw_title.lower() for w in ["south", "telugu", "tamil"]) else "Bollywood")
+
+    return {
+        "slug": slug,
+        "title": clean_title,
+        "raw_title": raw_title,
+        "year": str(year_num) if year_num > 1900 else "2024",
+        "year_num": year_num,
+        "category": cat,
+        "qualityName": chosen["quality"] if chosen else "720p HD",
+        "fastdlUrl": chosen["url"] if chosen else None,
+        "fastdlPagesUrl": chosen["url"] if chosen else None,
+        "poster_url": poster_url,
+        "imdb": {}
+    }
+
+def search_bollyflix_tours(query):
+    """Searches BollyFlix Tours (Site 1) for query and returns extracted movie dict if found."""
+    import urllib.parse
+    from bs4 import BeautifulSoup
+    domains = ["https://new1.bollyflix.tours", "https://bollyflix.tours"]
+    words = [w.lower() for w in re.split(r'[^a-zA-Z0-9]+', query) if len(w) > 2 and w.lower() not in ['hindi', 'dual', 'audio', 'movie', 'download', '720p', '480p', '1080p']]
+    clean_q = " ".join(words) if words else query
+    encoded_q = urllib.parse.quote_plus(clean_q)
+    
+    for domain in domains:
+        try:
+            url = f"{domain}/?s={encoded_q}"
+            r = requests.get(url, headers=BROWSER_HEADERS, timeout=10)
+            if r.status_code == 200:
+                soup = BeautifulSoup(r.text, "html.parser")
+                candidates = []
+                for a in soup.find_all("a", href=True):
+                    href = a["href"].strip()
+                    title = a.get("title") or a.get_text()
+                    title = title.strip()
+                    if href.startswith(domain) and not any(x in href for x in ["/category/", "/page/", "/tag/", "/contact", "/dmca"]):
+                        href_lower = href.lower()
+                        title_lower = title.lower()
+                        score = sum(1 for w in words if w in href_lower or w in title_lower)
+                        if score > 0:
+                            candidates.append((score, href))
+                if candidates:
+                    candidates.sort(key=lambda x: x[0], reverse=True)
+                    best_url = candidates[0][1]
+                    print(f"  🌐 [Site 1: BollyFlix Tours] Found candidate page: {best_url}")
+                    page_res = requests.get(best_url, headers=BROWSER_HEADERS, timeout=12)
+                    if page_res.status_code == 200:
+                        movie = extract_from_bollyflix_html(page_res.text, best_url)
+                        if movie and movie.get("fastdlUrl"):
+                            return movie
+        except Exception as e:
+            print(f"  ⚠️ BollyFlix Tours search error ({domain}): {e}")
+    return None
+
+def search_bollyspice(query):
+    """Searches BollySpice (Site 2) for query and returns extracted movie dict if found."""
+    from bs4 import BeautifulSoup
+    words = [w.lower() for w in re.split(r'[^a-zA-Z0-9]+', query) if len(w) > 2 and w.lower() not in ['hindi', 'dual', 'audio', 'movie', 'download', '720p', '480p', '1080p']]
+    clean_q = " ".join(words[:3]) if words else query
+    try:
+        s = requests.Session()
+        s.headers.update({
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+            'Referer': 'https://bollyspice.in/'
+        })
+        s.get('https://bollyspice.in/', timeout=6)
+        r = s.post('https://bollyspice.in/index.php?do=search', data={'do': 'search', 'subaction': 'search', 'story': clean_q}, timeout=10)
+        if r.status_code == 200:
+            soup = BeautifulSoup(r.text, "html.parser")
+            candidates = []
+            for a in soup.find_all("a", href=True):
+                href = a["href"].strip()
+                if re.search(r'/\d+-[a-zA-Z0-9-]+\.html', href):
+                    full_href = f"https://bollyspice.in{href}" if href.startswith("/") else href
+                    href_lower = href.lower()
+                    score = sum(1 for w in words if w in href_lower)
+                    candidates.append((score, full_href))
+            if candidates:
+                candidates.sort(key=lambda x: x[0], reverse=True)
+                best_url = candidates[0][1]
+                print(f"  🌐 [Site 2: BollySpice] Found candidate page: {best_url}")
+                page_res = s.get(best_url, timeout=12)
+                if page_res.status_code == 200:
+                    movie = extract_from_bollyspice_html(page_res.text, best_url)
+                    if movie and movie.get("fastdlUrl"):
+                        return movie
+    except Exception as e:
+        print(f"  ⚠️ BollySpice search error: {e}")
+    return None
+
+def search_bollyflixi(query):
+    """Searches BollyFlixi (Site 3) for query and returns extracted movie dict if found."""
+    import urllib.parse
+    from bs4 import BeautifulSoup
+    words = [w.lower() for w in re.split(r'[^a-zA-Z0-9]+', query) if len(w) > 2 and w.lower() not in ['hindi', 'dual', 'audio', 'movie', 'download', '720p', '480p', '1080p']]
+    clean_q = " ".join(words) if words else query
+    try:
+        url = f"https://bollyflixi.com/?s={urllib.parse.quote_plus(clean_q)}"
+        r = requests.get(url, headers=BROWSER_HEADERS, timeout=10)
+        if r.status_code == 200:
+            soup = BeautifulSoup(r.text, "html.parser")
+            candidates = []
+            for a in soup.find_all("a", href=True):
+                href = a["href"].strip()
+                if href.startswith("https://bollyflixi.com/") and not any(x in href for x in ["/category/", "/page/", "/tag/"]):
+                    href_lower = href.lower()
+                    score = sum(1 for w in words if w in href_lower)
+                    if score > 0:
+                        candidates.append((score, href))
+            if candidates:
+                candidates.sort(key=lambda x: x[0], reverse=True)
+                best_url = candidates[0][1]
+                print(f"  🌐 [Site 3: BollyFlixi] Found candidate page: {best_url}")
+                page_res = requests.get(best_url, headers=BROWSER_HEADERS, timeout=12)
+                if page_res.status_code == 200:
+                    movie = extract_from_bollyflix_html(page_res.text, best_url)
+                    if movie and movie.get("fastdlUrl"):
+                        return movie
+    except Exception as e:
+        print(f"  ⚠️ BollyFlixi search error: {e}")
+    return None
+
+def smart_search_and_resolve_movie(raw_input, all_movies):
+    """
+    Intelligently resolves any movie query:
+    1. Direct FastDL/GDFlix/CDN URL -> Synthetic movie object
+    2. Specific Webpage URL (BollyFlix Tours, BollySpice, BollyFlixi) -> Scrapes and extracts movie
+    3. Movie Title / Name / Slug (e.g. 'eternals', 'war-2019', 'pushpa 2'):
+       - Checks local 7,500+ database first
+       - If not found locally, live-searches all 3 websites in order:
+         [Site 1: BollyFlix Tours] -> [Site 2: BollySpice] -> [Site 3: BollyFlixi]
+       - Enriches with Cinemeta IMDb metadata (HD Poster, Rating, Cast, Genres)
+    """
+    raw_input = raw_input.strip()
+    
+    # 1. Direct Download Link provided
+    if raw_input.startswith("http") and any(d in raw_input for d in ["dl.fastdlserver.site", "instadl.rest", "gdflix", "googleusercontent", "fast-dl.one", "nexdrive.help"]):
+        return [{
+            "slug": f"custom-url-{int(time.time())}",
+            "title": "Custom Movie Release",
+            "year": "2024",
+            "year_num": 2024,
+            "category": "Bollywood",
+            "qualityName": "720p HD",
+            "fastdlUrl": raw_input,
+            "fastdlPagesUrl": raw_input,
+            "poster_url": None,
+            "imdb": {}
+        }]
+        
+    # 2. Specific Movie Webpage URL provided
+    if raw_input.startswith("http"):
+        print(f"🔍 Direct Webpage URL provided: {raw_input}")
+        try:
+            r = requests.get(raw_input, headers=BROWSER_HEADERS, timeout=12)
+            if r.status_code == 200:
+                if "bollyspice.in" in raw_input:
+                    movie = extract_from_bollyspice_html(r.text, raw_input)
+                else:
+                    movie = extract_from_bollyflix_html(r.text, raw_input)
+                if movie and movie.get("fastdlUrl"):
+                    print(f"  ✅ Extracted movie: {movie['title']} ({movie['year']}) with {movie['qualityName']}")
+                    return [movie]
+        except Exception as e:
+            print(f"  ⚠️ Error scraping direct webpage URL: {e}")
+            
+    # 3. Movie Slug or Name provided (e.g. 'eternals', 'war 2019', 'Download Eternals (2021)...')
+    # 3A. First search local database
+    query = raw_input.lower()
+    clean_q = clean_movie_title(raw_input).lower()
+    
+    local_matches = [m for m in all_movies if query in m.get("slug", "").lower() or query in m.get("title", "").lower()]
+    if not local_matches and clean_q:
+        local_matches = [m for m in all_movies if clean_q in m.get("slug", "").lower() or clean_q in m.get("title", "").lower()]
+    if not local_matches:
+        # Fuzzy tokens
+        tokens = [t for t in re.split(r'[^a-zA-Z0-9]+', clean_q or query) if len(t) > 3 and not t.isdigit()]
+        if tokens:
+            local_matches = [m for m in all_movies if all(t in m.get("slug", "").lower() or t in m.get("title", "").lower() for t in tokens)]
+            
+    if local_matches:
+        print(f"📚 Found {len(local_matches)} matching movie(s) in local catalog snapshot!")
+        return local_matches
+        
+    # 3B. Not found in local snapshot! Launch Multi-Site Live Search across all 3 websites!
+    search_term = clean_movie_title(raw_input) or raw_input
+    print(f"🌐 '{raw_input}' not in local catalog snapshot.")
+    print(f"🚀 Launching Live Multi-Site Search for '{search_term}' across 3 platforms...")
+    
+    # Try Site 1: BollyFlix Tours (https://new1.bollyflix.tours)
+    movie = search_bollyflix_tours(search_term)
+    if movie:
+        print(f"  🎯 Successfully resolved from [Site 1: BollyFlix Tours]: {movie['title']} ({movie['year']})")
+        return [movie]
+        
+    # Try Site 2: BollySpice (https://bollyspice.in)
+    movie = search_bollyspice(search_term)
+    if movie:
+        print(f"  🎯 Successfully resolved from [Site 2: BollySpice]: {movie['title']} ({movie['year']})")
+        return [movie]
+        
+    # Try Site 3: BollyFlixi (https://bollyflixi.com)
+    movie = search_bollyflixi(search_term)
+    if movie:
+        print(f"  🎯 Successfully resolved from [Site 3: BollyFlixi]: {movie['title']} ({movie['year']})")
+        return [movie]
+        
+    print(f"❌ '{search_term}' could not be found across any of the 3 websites.")
+    return []
+
 def load_all_categorized_movies():
     """
     Loads all movies from bollyflix_categorized_download_links.json.
@@ -279,9 +629,22 @@ def load_all_categorized_movies():
     return categories
 
 def resolve_direct_link(start_url):
-    """Follows fastdl / instadl redirects to get direct Google CDN download link."""
+    """Follows fastdl / instadl / nexdrive / gdflix redirects to get direct Google CDN download link."""
     if not start_url:
         return None
+        
+    # If already a Google CDN direct URL
+    if "googleusercontent.com" in start_url:
+        return start_url
+        
+    # If fastdl-one.pages.dev wrapper, unwrap the inner URL
+    if "fastdl-one.pages.dev" in start_url and "url=" in start_url:
+        import urllib.parse
+        parsed = urllib.parse.urlparse(start_url)
+        params = urllib.parse.parse_qs(parsed.query)
+        if "url" in params and params["url"]:
+            start_url = params["url"][0]
+
     curr = start_url
     for _ in range(8):
         try:
@@ -295,12 +658,26 @@ def resolve_direct_link(start_url):
                     return curr
             elif res.status_code == 200:
                 html = res.text
+                if "googleusercontent.com" in html:
+                    m = re.search(r'https?://[^\'"\s]*googleusercontent\.com[^\'"\s]*', html)
+                    if m:
+                        return m.group(0)
+                        
                 match = re.search(r'href=[\'"]([^\'"]*(?:Instant DL|instadl\.rest)[^\'"]*)[\'"]', html, re.IGNORECASE)
                 if not match:
                     match = re.search(r'href=[\'"](https?://[^\'"]*instadl\.rest[^\'"]*)[\'"]', html)
                 if not match:
+                    match = re.search(r'href=[\'"](https?://[^\'"]*(?:fastdlserver|fast-dl\.one|gdflix|googleusercontent)[^\'"]*)[\'"]', html, re.IGNORECASE)
+                if not match:
+                    match = re.search(r'<a[^>]+href=[\'"]([^\'"]+)[\'"][^>]*>(?:[^<]*(?:Instant|Direct|Fast Cloud|High Speed|Download)[^<]*)</a>', html, re.IGNORECASE)
+                
+                if not match:
                     return None
+                    
                 found_link = match.group(1)
+                if "googleusercontent.com" in found_link:
+                    return found_link
+                    
                 dl_res = requests.get(found_link, headers={**BROWSER_HEADERS, "Referer": curr}, allow_redirects=False, timeout=12)
                 dl_loc = dl_res.headers.get("Location")
                 if dl_loc:
@@ -309,8 +686,15 @@ def resolve_direct_link(start_url):
                         parsed = urllib.parse.urlparse(dl_loc)
                         params = urllib.parse.parse_qs(parsed.query)
                         if "url" in params and params["url"]:
-                            return params["url"][0]
-                    return dl_loc
+                            extracted = params["url"][0]
+                            if "googleusercontent.com" in extracted:
+                                return extracted
+                            curr = extracted
+                            continue
+                    if "googleusercontent.com" in dl_loc:
+                        return dl_loc
+                    curr = dl_loc if dl_loc.startswith("http") else requests.compat.urljoin(found_link, dl_loc)
+                    continue
                 return None
         except Exception as e:
             print(f"  ⚠️ Redirect resolve error: {e}")
@@ -578,33 +962,7 @@ async def main():
     if args.slug:
         raw_input = args.slug.strip()
         all_movies = bolly_all + south_all + holly_all
-
-        # 1. Direct Download Link provided (FastDL / GDFlix)
-        if raw_input.startswith("http") and any(d in raw_input for d in ["dl.fastdlserver.site", "instadl.rest", "gdflix"]):
-            candidate_pool = [{
-                "slug": f"custom-url-{int(time.time())}",
-                "title": "Custom Movie Release",
-                "year": "2024",
-                "year_num": 2024,
-                "category": "Bollywood",
-                "qualityName": "720p HD",
-                "fastdlUrl": raw_input,
-                "fastdlPagesUrl": raw_input,
-                "poster_url": None,
-                "imdb": {}
-            }]
-        elif raw_input.startswith("http"):
-            # 2. BollyFlix Page URL provided -> Extract slug from URL!
-            slug_part = raw_input.rstrip("/").split("/")[-1].replace("download-", "").replace("-download", "").lower()
-            candidate_pool = [m for m in all_movies if slug_part in m.get("slug", "").lower() or m.get("slug", "").lower() in slug_part or slug_part in m.get("title", "").lower()]
-            if not candidate_pool:
-                # Fuzzy fallback matching on keywords
-                tokens = [t for t in slug_part.split("-") if len(t) > 3 and not t.isdigit()]
-                candidate_pool = [m for m in all_movies if any(t in m.get("slug", "").lower() for t in tokens)]
-        else:
-            # 3. Movie Slug or Name provided (e.g. war-2019, 3 idiots, animal)
-            query = raw_input.lower()
-            candidate_pool = [m for m in all_movies if query in m.get("slug", "").lower() or query in m.get("title", "").lower()]
+        candidate_pool = smart_search_and_resolve_movie(raw_input, all_movies)
     elif args.latest:
         max_len = max(len(bolly_candidates), len(south_candidates), len(holly_candidates), 1)
         for i in range(max_len):

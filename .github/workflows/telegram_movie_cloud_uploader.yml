@@ -51,7 +51,9 @@ jobs:
           SLUG="${{ github.event.inputs.movie_slug }}"
           LIMIT="${{ github.event.inputs.limit || '1' }}"
           
-          if [ "$MODE" = "slug" ] && [ -n "$SLUG" ]; then
+          # SMART DISPATCH: If any movie slug, name, or URL is entered, prioritize it immediately!
+          if [ -n "$SLUG" ]; then
+            echo "🎯 Custom Movie / Search Query Requested: $SLUG"
             python scripts/telegram_cloud_uploader.py --slug "$SLUG"
           elif [ "$MODE" = "all" ]; then
             python scripts/telegram_cloud_uploader.py --all
@@ -75,7 +77,7 @@ jobs:
           git add data/telegram_cloud_uploaded.json data/telegram_cloud_skipped.json
           if ! git diff --cached --quiet; then
             git commit -m "chore: Update Telegram cloud uploaded & skipped state [skip ci]"
-            git push origin main
+            git push origin main || (git pull --rebase origin main && git push origin main) || echo "Push skipped (concurrent commit)"
           else
             echo "No changes to commit."
           fi
