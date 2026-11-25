@@ -3,7 +3,7 @@
 BollyHub Telegram Cloud Movie Uploader (MTProto 2GB Streaming)
 Uploads full HD movies directly to Telegram channels with native video streaming support,
 thumbnails, progress reporting, and zero user data/PC usage via GitHub Actions Cloud Runner.
-Connected to BollyFlix 7,500+ Categorized Movies Database with Hourly Auto-Pilot.
+Connected to BollyFlix 7,500+ Categorized Movies Database with Auto-Retry and Hourly Auto-Pilot.
 """
 
 import os
@@ -49,6 +49,7 @@ DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 MOVIES_FILE = DATA_DIR / "movies.json"
 LINKS_FILE = DATA_DIR / "bollyflix_categorized_download_links.json"
 POSTED_FILE = DATA_DIR / "telegram_cloud_uploaded.json"
+SKIPPED_FILE = DATA_DIR / "telegram_cloud_skipped.json"
 DEFAULT_THUMB = DATA_DIR / "default_thumb.jpg"
 
 BROWSER_HEADERS = {
@@ -74,6 +75,22 @@ def save_posted(slug):
     POSTED_FILE.parent.mkdir(parents=True, exist_ok=True)
     with open(POSTED_FILE, "w", encoding="utf-8") as f:
         json.dump(list(posted), f, indent=2)
+
+def load_skipped():
+    if SKIPPED_FILE.exists():
+        try:
+            with open(SKIPPED_FILE, "r", encoding="utf-8") as f:
+                return set(json.load(f))
+        except Exception:
+            pass
+    return set()
+
+def save_skipped(slug):
+    skipped = load_skipped()
+    skipped.add(slug)
+    SKIPPED_FILE.parent.mkdir(parents=True, exist_ok=True)
+    with open(SKIPPED_FILE, "w", encoding="utf-8") as f:
+        json.dump(list(skipped), f, indent=2)
 
 def load_all_categorized_movies():
     """
@@ -168,7 +185,7 @@ def resolve_direct_link(start_url):
     curr = start_url
     for _ in range(8):
         try:
-            res = requests.get(curr, headers={**BROWSER_HEADERS, "Referer": curr}, allow_redirects=False, timeout=15)
+            res = requests.get(curr, headers={**BROWSER_HEADERS, "Referer": curr}, allow_redirects=False, timeout=12)
             if res.status_code in (301, 302, 307, 308):
                 loc = res.headers.get("Location")
                 if not loc:
@@ -184,7 +201,7 @@ def resolve_direct_link(start_url):
                 if not match:
                     return None
                 found_link = match.group(1)
-                dl_res = requests.get(found_link, headers={**BROWSER_HEADERS, "Referer": curr}, allow_redirects=False, timeout=15)
+                dl_res = requests.get(found_link, headers={**BROWSER_HEADERS, "Referer": curr}, allow_redirects=False, timeout=12)
                 dl_loc = dl_res.headers.get("Location")
                 if dl_loc:
                     if "url=" in dl_loc:
@@ -202,36 +219,44 @@ def resolve_direct_link(start_url):
 
 def download_file(url, target_path):
     """
-    High-speed stream download with progress reporting and 1950MB safety limit.
-    ALWAYS passes BROWSER_HEADERS to prevent Google CDN 400 Bad Request error.
+    High-speed stream download with progress reporting, HTTP error checking,
+    and 1950MB safety limit. Returns True if successful, False if link is broken/expired.
     """
     print(f"⬇️ Downloading to {target_path.name}...")
-    with requests.get(url, stream=True, headers=BROWSER_HEADERS, timeout=60) as r:
-        r.raise_for_status()
-        total_size = int(r.headers.get("content-length", 0))
+    try:
+        with requests.get(url, stream=True, headers=BROWSER_HEADERS, timeout=30) as r:
+            if r.status_code >= 400:
+                print(f"  ❌ CDN returned HTTP {r.status_code} (Link expired or DMCA blocked on Google Drive).")
+                return False
 
-        # Telegram bot MTProto limit is 2000 MB (4000 parts of 512KB)
-        MAX_SAFE_BYTES = 1950 * 1024 * 1024
-        if total_size > MAX_SAFE_BYTES:
-            print(f"  ⚠️ Video size ({total_size / (1024*1024):.1f} MB) exceeds Telegram Bot MTProto limit (1950 MB). Skipping to prevent crash.")
-            return False
+            r.raise_for_status()
+            total_size = int(r.headers.get("content-length", 0))
 
-        downloaded = 0
-        last_pct = 0
-        with open(target_path, "wb") as f:
-            for chunk in r.iter_content(chunk_size=1024 * 1024): # 1MB chunks
-                if chunk:
-                    f.write(chunk)
-                    downloaded += len(chunk)
-                    if total_size > 0:
-                        pct = int((downloaded / total_size) * 100)
-                        if pct >= last_pct + 20:
-                            print(f"  ⬇️ Downloaded: {pct}% ({downloaded / (1024*1024):.1f} MB / {total_size / (1024*1024):.1f} MB)")
-                            last_pct = pct
+            # Telegram bot MTProto limit is 2000 MB (4000 parts of 512KB)
+            MAX_SAFE_BYTES = 1950 * 1024 * 1024
+            if total_size > MAX_SAFE_BYTES:
+                print(f"  ⚠️ Video size ({total_size / (1024*1024):.1f} MB) exceeds Telegram Bot MTProto limit (1950 MB). Skipping.")
+                return False
 
-    file_size_mb = target_path.stat().st_size / (1024 * 1024)
-    print(f"  ✅ Download complete: {file_size_mb:.1f} MB")
-    return True
+            downloaded = 0
+            last_pct = 0
+            with open(target_path, "wb") as f:
+                for chunk in r.iter_content(chunk_size=1024 * 1024): # 1MB chunks
+                    if chunk:
+                        f.write(chunk)
+                        downloaded += len(chunk)
+                        if total_size > 0:
+                            pct = int((downloaded / total_size) * 100)
+                            if pct >= last_pct + 20:
+                                print(f"  ⬇️ Downloaded: {pct}% ({downloaded / (1024*1024):.1f} MB / {total_size / (1024*1024):.1f} MB)")
+                                last_pct = pct
+
+        file_size_mb = target_path.stat().st_size / (1024 * 1024)
+        print(f"  ✅ Download complete: {file_size_mb:.1f} MB")
+        return True
+    except Exception as e:
+        print(f"  ❌ Download error: {e}")
+        return False
 
 def download_thumbnail(poster_url, target_path):
     """Downloads poster as JPG thumbnail for video player preview."""
@@ -389,7 +414,7 @@ async def main():
     parser.add_argument("--latest", action="store_true", help="Upload the latest verified movie")
     parser.add_argument("--all", action="store_true", help="Upload all unposted movies sequentially")
     parser.add_argument("--chat", help="Target channel ID (e.g. -100...) or @channel_username")
-    parser.add_argument("--limit", type=int, default=1, help="Max movies to process (Default: 1)")
+    parser.add_argument("--limit", type=int, default=1, help="Target number of SUCCESSFUL uploads (Default: 1)")
     args = parser.parse_args()
 
     if not API_ID or not API_HASH:
@@ -417,54 +442,41 @@ async def main():
     print(f"📚 Total Movies in Catalog Pool: {total_pool} (Bollywood: {len(bolly_all)}, South: {len(south_all)}, Hollywood: {len(holly_all)})")
 
     posted = load_posted()
-    print(f"✅ Already uploaded to Telegram: {len(posted)} movies")
+    skipped = load_skipped()
+    print(f"✅ Already uploaded: {len(posted)} movies | 🚫 Skipped dead links: {len(skipped)}")
 
-    # Filter unposted
-    bolly_unposted = [m for m in bolly_all if m["slug"] not in posted]
-    south_unposted = [m for m in south_all if m["slug"] not in posted]
-    holly_unposted = [m for m in holly_all if m["slug"] not in posted]
+    # Filter unposted and unskipped
+    bolly_candidates = [m for m in bolly_all if m["slug"] not in posted and m["slug"] not in skipped]
+    south_candidates = [m for m in south_all if m["slug"] not in posted and m["slug"] not in skipped]
+    holly_candidates = [m for m in holly_all if m["slug"] not in posted and m["slug"] not in skipped]
 
-    # Determine targets
+    # Generate Candidate Sequence
+    candidate_pool = []
     if args.slug:
         all_movies = bolly_all + south_all + holly_all
-        targets = [m for m in all_movies if m.get("slug") == args.slug or args.slug.lower() in m.get("title", "").lower()]
-        targets = targets[:1]
+        candidate_pool = [m for m in all_movies if m.get("slug") == args.slug or args.slug.lower() in m.get("title", "").lower()]
     elif args.latest:
-        # Latest from all categories combined
-        combined = []
-        max_len = max(len(bolly_unposted), len(south_unposted), len(holly_unposted), 1)
+        max_len = max(len(bolly_candidates), len(south_candidates), len(holly_candidates), 1)
         for i in range(max_len):
-            if i < len(bolly_unposted): combined.append(bolly_unposted[i])
-            if i < len(south_unposted): combined.append(south_unposted[i])
-            if i < len(holly_unposted): combined.append(holly_unposted[i])
-        targets = combined[:args.limit]
-    elif args.all:
-        combined = []
-        max_len = max(len(bolly_unposted), len(south_unposted), len(holly_unposted), 1)
-        for i in range(max_len):
-            if i < len(bolly_unposted): combined.append(bolly_unposted[i])
-            if i < len(south_unposted): combined.append(south_unposted[i])
-            if i < len(holly_unposted): combined.append(holly_unposted[i])
-        targets = combined
+            if i < len(bolly_candidates): candidate_pool.append(bolly_candidates[i])
+            if i < len(south_candidates): candidate_pool.append(south_candidates[i])
+            if i < len(holly_candidates): candidate_pool.append(holly_candidates[i])
     else: # Default: Auto-balanced round-robin across all categories!
-        targets = []
-        queues = [bolly_unposted, south_unposted, holly_unposted]
+        queues = [bolly_candidates, south_candidates, holly_candidates]
         q_idx = 0
-        while len(targets) < args.limit and any(queues):
+        while any(queues) and len(candidate_pool) < 50:
             q = queues[q_idx % len(queues)]
             if q:
-                targets.append(q.pop(0))
+                candidate_pool.append(q.pop(0))
             q_idx += 1
 
-    if not targets:
-        print("🎉 All movies in catalog are already uploaded to Telegram!")
+    if not candidate_pool:
+        print("🎉 No pending candidates left to process!")
         return
 
     print("===============================================================")
     print("🚀 BOLLYHUB TELEGRAM CLOUD MOVIE UPLOADER (MTPROTO 2GB)")
-    print(f"🎬 Movies queued: {len(targets)}")
-    for t in targets:
-        print(f"   • [{t.get('category')}] {t.get('title')} ({t.get('year')})")
+    print(f"🎯 Target Successful Uploads: {args.limit}")
     print(f"📌 Target Channel: {target_chat}")
     print("===============================================================")
 
@@ -478,64 +490,81 @@ async def main():
     work_dir = Path(__file__).resolve().parent / "temp_cloud_movies"
     work_dir.mkdir(parents=True, exist_ok=True)
 
-    for idx, movie in enumerate(targets, 1):
+    successful_uploads = 0
+    max_attempts = max(args.limit * 8, 15)
+    attempt_count = 0
+
+    for movie in candidate_pool:
+        if successful_uploads >= args.limit:
+            break
+        if attempt_count >= max_attempts:
+            print(f"⚠️ Reached max attempt limit ({max_attempts}). Stopping.")
+            break
+
+        attempt_count += 1
         slug = movie.get("slug")
         title = movie.get("title")
+        category = movie.get("category")
         fastdl_url = movie.get("fastdlUrl") or movie.get("fastdlPagesUrl")
-        print(f"\n[{idx}/{len(targets)}] Processing: {title} ({slug})")
+
+        print(f"\n[Attempt {attempt_count} | Goal: {successful_uploads}/{args.limit}] [{category}] {title} ({slug})")
 
         if not fastdl_url:
-            print(f"  ⚠️ No download source found for {title}, skipping.")
+            print(f"  ⚠️ No FastDL URL found, marking skipped.")
+            save_skipped(slug)
             continue
 
-        # Resolve Google CDN direct URL
+        # 1. Resolve Google CDN direct URL
         direct_url = resolve_direct_link(fastdl_url)
         if not direct_url and movie.get("fastdlPagesUrl") and movie["fastdlPagesUrl"] != fastdl_url:
             direct_url = resolve_direct_link(movie["fastdlPagesUrl"])
 
         if not direct_url:
-            print(f"  ❌ Could not resolve CDN direct link for {title}, skipping.")
+            print(f"  ❌ CDN direct link could not be resolved. Marking as broken & auto-trying next movie...")
+            save_skipped(slug)
             continue
 
         temp_video = work_dir / f"{slug}.mp4"
         temp_thumb = work_dir / f"{slug}_thumb.jpg"
 
         try:
-            # 1. Prepare Thumbnail (Custom Poster or Official 3D Logo)
+            # 2. Prepare Thumbnail
             thumb_path = None
             if movie.get("poster_url"):
                 thumb_path = download_thumbnail(movie["poster_url"], temp_thumb)
             if not thumb_path and DEFAULT_THUMB.exists():
                 thumb_path = str(DEFAULT_THUMB)
 
-            # 2. Download Video (15-25 seconds on Cloud 1Gbps)
+            # 3. High-Speed Download with HTTP Error Check
             download_success = download_file(direct_url, temp_video)
             if not download_success:
-                print(f"  ⚠️ Skipping {title} due to download guard.")
+                print(f"  ⚠️ Skipping dead link ({title}) & saving to skipped catalog. Auto-trying next movie...")
+                save_skipped(slug)
                 continue
 
-            # 3. Upload Video directly to Telegram via MTProto with streaming attribute
+            # 4. Upload to Telegram via FastTelethon 4-Worker MTProto
             msg_id = await upload_movie_to_telegram(client, target_chat, movie, temp_video, thumb_path)
             if msg_id:
                 save_posted(slug)
-                print(f"  ⭐ Successfully posted {title} to Telegram Channel!")
+                successful_uploads += 1
+                print(f"  ⭐ Successfully posted [{successful_uploads}/{args.limit}] {title} to Telegram Channel!")
         except Exception as e:
             print(f"  ❌ Error processing {title}: {e}")
+            save_skipped(slug)
         finally:
-            # Clean up disk space immediately
             if temp_video.exists():
                 temp_video.unlink()
             if temp_thumb.exists():
                 temp_thumb.unlink()
             print("  🧹 Local temporary video cleaned up.")
 
-        if idx < len(targets):
-            print("Waiting 5 seconds before next movie...")
+        if successful_uploads < args.limit:
+            print("Waiting 5 seconds before next attempt...")
             await asyncio.sleep(5)
 
     await client.disconnect()
     print("\n===============================================================")
-    print("🎉 ALL CLOUD UPLOADS FINISHED SUCCESSFULLY!")
+    print(f"🎉 BATCH COMPLETE: Successfully uploaded {successful_uploads}/{args.limit} movie(s) to Telegram!")
     print("===============================================================")
 
 if __name__ == "__main__":

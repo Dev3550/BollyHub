@@ -22,7 +22,7 @@ on:
         required: false
         default: ''
       limit:
-        description: 'Number of movies to upload (Default: 1)'
+        description: 'Target successful movie uploads (Default: 1)'
         required: false
         default: '1'
 
@@ -67,13 +67,13 @@ jobs:
           BOLLYHUB_TELEGRAM_CHAT_ID: ${{ secrets.BOLLYHUB_TELEGRAM_CHAT_ID || '-1004487173033' }}
           BOLLYHUB_TELEGRAM_CHANNEL: ${{ secrets.BOLLYHUB_TELEGRAM_CHANNEL || 'https://t.me/+mu3upENk3GFmZTFl' }}
 
-      - name: Save Uploaded State & Push to Repository
+      - name: Save Uploaded & Skipped State & Push to Repository
         run: |
           git config --global user.name "BollyHub Cloud Bot"
           git config --global user.email "cloudbot@bollyhub.app"
-          git add data/telegram_cloud_uploaded.json
+          git add data/telegram_cloud_uploaded.json data/telegram_cloud_skipped.json
           if ! git diff --cached --quiet; then
-            git commit -m "chore: Update Telegram cloud uploaded catalog state [skip ci]"
+            git commit -m "chore: Update Telegram cloud uploaded & skipped state [skip ci]"
             git push origin main
           else
             echo "No changes to commit."
