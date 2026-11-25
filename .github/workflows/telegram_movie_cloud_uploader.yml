@@ -17,9 +17,9 @@ on:
         required: false
         default: ''
       limit:
-        description: 'Number of movies to upload (Default: 3)'
+        description: 'Number of movies to upload (Default: 2)'
         required: false
-        default: '3'
+        default: '2'
 
   # Uncomment below if you want automated scheduled uploads (e.g. every 6 hours)
   # schedule:
@@ -55,7 +55,7 @@ jobs:
           elif [ "$MODE" = "all" ]; then
             python scripts/telegram_cloud_uploader.py --all
           else
-            python scripts/telegram_cloud_uploader.py --latest
+            python scripts/telegram_cloud_uploader.py --latest --limit "$LIMIT"
           fi
         env:
           TELEGRAM_API_ID: ${{ secrets.TELEGRAM_API_ID || '37457570' }}
