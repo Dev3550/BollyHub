@@ -2,7 +2,7 @@
 """
 BollyHub Telegram Cloud Movie Uploader (MTProto 2GB Streaming)
 Uploads full HD movies directly to Telegram channels with native video streaming support,
-thumbnails, progress reporting, and zero user data/PC usage via GitHub Actions Cloud Runner.
+dynamic IMDb movie posters, ratings, cast, summaries, and zero user data/PC usage via GitHub Actions.
 Connected to BollyFlix 7,500+ Categorized Movies Database with Auto-Retry and Hourly Auto-Pilot.
 Strictly filters Hollywood movies for Dual Audio (Hindi + English) so only Hindi content is posted!
 """
@@ -92,6 +92,47 @@ def save_skipped(slug):
     SKIPPED_FILE.parent.mkdir(parents=True, exist_ok=True)
     with open(SKIPPED_FILE, "w", encoding="utf-8") as f:
         json.dump(list(skipped), f, indent=2)
+
+def get_imdb_meta(clean_title, year=""):
+    """
+    Dynamically fetches real IMDb poster, rating, cast, director,
+    and storyline from Cinemeta Stremio Catalog without requiring any API key.
+    """
+    try:
+        clean_name = re.sub(r'[\{\[\(].*?[\}\]\)]', '', clean_title)
+        clean_name = re.split(r'\s+(?:Dual|Hindi|Audio|Movie|WEB-DL|HDRip|BluRay|HDTC|ESub)', clean_name, flags=re.IGNORECASE)[0].strip()
+        query = f'{clean_name} {year}'.strip() if year else clean_name
+        encoded = requests.compat.quote(query)
+        search_url = f'https://v3-cinemeta.strem.io/catalog/movie/top/search={encoded}.json'
+        r = requests.get(search_url, headers=BROWSER_HEADERS, timeout=6)
+        if r.status_code == 200:
+            metas = r.json().get('metas', [])
+            if metas:
+                imdb_id = metas[0].get('imdb_id') or metas[0].get('id')
+                if imdb_id and imdb_id.startswith('tt'):
+                    detail_url = f'https://v3-cinemeta.strem.io/meta/movie/{imdb_id}.json'
+                    dr = requests.get(detail_url, headers=BROWSER_HEADERS, timeout=6)
+                    if dr.status_code == 200:
+                        m = dr.json().get('meta', {})
+                        poster = m.get('poster')
+                        if poster and 'small' in poster:
+                            poster = poster.replace('/small/', '/medium/')
+                            if not poster.endswith('.jpg'):
+                                poster += '.jpg'
+                        return {
+                            'imdb_id': imdb_id,
+                            'title': m.get('name') or clean_name,
+                            'year': m.get('year') or year,
+                            'rating': str(m.get('imdbRating') or '7.5'),
+                            'genres': ', '.join(m.get('genres', [])) if m.get('genres') else None,
+                            'director': ', '.join(m.get('director', [])) if m.get('director') else None,
+                            'cast': m.get('cast', [])[:4] if m.get('cast') else [],
+                            'poster_url': poster or m.get('poster'),
+                            'summary': m.get('description') or ''
+                        }
+    except Exception as e:
+        print(f"  ⚠️ Cinemeta metadata fetch warning: {e}")
+    return None
 
 def load_all_categorized_movies():
     """
@@ -271,8 +312,8 @@ def download_file(url, target_path):
 def download_thumbnail(poster_url, target_path):
     """Downloads poster as JPG thumbnail for video player preview."""
     try:
-        r = requests.get(poster_url, headers=BROWSER_HEADERS, timeout=10)
-        if r.status_code == 200:
+        r = requests.get(poster_url, headers=BROWSER_HEADERS, timeout=12)
+        if r.status_code == 200 and len(r.content) > 1000:
             with open(target_path, "wb") as f:
                 f.write(r.content)
             return str(target_path)
@@ -528,6 +569,20 @@ async def main():
             save_skipped(slug)
             continue
 
+        # Dynamic IMDb & Official HD Poster Enrichment
+        if not movie.get("poster_url") or not movie.get("imdb", {}).get("rating"):
+            live_meta = get_imdb_meta(movie["title"], movie.get("year", ""))
+            if live_meta:
+                print(f"  🌟 IMDb Enriched: {live_meta['title']} ({live_meta['year']}) | ★ {live_meta['rating']}")
+                if live_meta.get("poster_url"):
+                    movie["poster_url"] = live_meta["poster_url"]
+                movie_imdb = movie.setdefault("imdb", {})
+                if live_meta.get("rating"): movie_imdb["rating"] = live_meta["rating"]
+                if live_meta.get("genres"): movie_imdb["genres"] = live_meta["genres"]
+                if live_meta.get("director"): movie_imdb["director"] = live_meta["director"]
+                if live_meta.get("cast"): movie_imdb["cast"] = live_meta["cast"]
+                if live_meta.get("summary"): movie_imdb["summary"] = live_meta["summary"]
+
         # 1. Resolve Google CDN direct URL
         direct_url = resolve_direct_link(fastdl_url)
         if not direct_url and movie.get("fastdlPagesUrl") and movie["fastdlPagesUrl"] != fastdl_url:
@@ -542,9 +597,10 @@ async def main():
         temp_thumb = work_dir / f"{slug}_thumb.jpg"
 
         try:
-            # 2. Prepare Thumbnail
+            # 2. Prepare Thumbnail (Real Movie Poster or Official 3D Logo)
             thumb_path = None
             if movie.get("poster_url"):
+                print(f"  🖼️ Fetching HD poster: {movie['poster_url'][:70]}...")
                 thumb_path = download_thumbnail(movie["poster_url"], temp_thumb)
             if not thumb_path and DEFAULT_THUMB.exists():
                 thumb_path = str(DEFAULT_THUMB)
