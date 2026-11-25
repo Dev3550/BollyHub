@@ -4,6 +4,7 @@ BollyHub Telegram Cloud Movie Uploader (MTProto 2GB Streaming)
 Uploads full HD movies directly to Telegram channels with native video streaming support,
 thumbnails, progress reporting, and zero user data/PC usage via GitHub Actions Cloud Runner.
 Connected to BollyFlix 7,500+ Categorized Movies Database with Auto-Retry and Hourly Auto-Pilot.
+Strictly filters Hollywood movies for Dual Audio (Hindi + English) so only Hindi content is posted!
 """
 
 import os
@@ -94,8 +95,9 @@ def save_skipped(slug):
 
 def load_all_categorized_movies():
     """
-    Loads all 7,554 720p movies from bollyflix_categorized_download_links.json.
-    Categorized into Bollywood, South Hindi Dubbed, and Hollywood.
+    Loads all movies from bollyflix_categorized_download_links.json.
+    Strictly filters Hollywood for Dual Audio / Hindi content only!
+    Categorized into Bollywood, South Hindi Dubbed, and Hollywood Dual Audio.
     Enriched with website movies.json metadata (IMDb, poster) where available.
     """
     enrich_map = {}
@@ -135,9 +137,17 @@ def load_all_categorized_movies():
 
                 if movie_id in seen_slugs:
                     continue
-                seen_slugs.add(movie_id)
 
                 raw_title = item.get("title", "")
+
+                # STRICT FILTER: For Hollywood movies, ensure it has Hindi Audio (Dual Audio / Multi Audio)
+                if matched_cat == "Hollywood":
+                    title_lower = raw_title.lower()
+                    if not any(w in title_lower for w in ["hindi", "dual", "multi"]):
+                        continue
+
+                seen_slugs.add(movie_id)
+
                 year = item.get("year", "")
                 clean_title = re.sub(r'^Download\s+', '', raw_title, flags=re.IGNORECASE)
                 clean_title = re.split(r'\s+(?:480p|720p|1080p|2160p|WEB-DL|HDRip|BluRay|HDTC|Pre-DVDRip|Full Movie)', clean_title, flags=re.IGNORECASE)[0].strip()
@@ -280,10 +290,13 @@ def format_caption(movie):
     cast = ", ".join(movie.get("imdb", {}).get("cast", [])[:4]) if movie.get("imdb", {}).get("cast") else ""
     director = movie.get("imdb", {}).get("director")
 
+    tip_line = ""
     if "South" in category:
         audio_lang = "Hindi Dubbed [Dual Audio HQ]"
+        tip_line = "💡 <i>Audio Note: Tap ⋮ (3-dots) on player to switch Audio Track to Hindi</i>\n"
     elif "Hollywood" in category:
         audio_lang = "Hindi + English [Dual Audio 5.1]"
+        tip_line = "💡 <i>Audio Note: Tap ⋮ (3-dots) on player to switch Audio Track to Hindi</i>\n"
     else:
         audio_lang = "Hindi Original [Clean 5.1 DD]"
 
@@ -308,6 +321,7 @@ def format_caption(movie):
         f"📖 <b>Storyline:</b>\n"
         f"<i>\"{summary[:200]}...\"</i>\n\n"
         f"━━━━━━━━━━━━━━━━━━━━━\n"
+        f"{tip_line}"
         f"🍿 <b>Play directly inside Telegram with zero buffering!</b>\n"
         f"📢 <b>Official Community:</b> {CHANNEL_LINK}"
     )
@@ -410,7 +424,7 @@ async def upload_movie_to_telegram(client, chat_target, movie, video_path, thumb
 async def main():
     parser = argparse.ArgumentParser(description="BollyHub Telegram Cloud Movie Uploader")
     parser.add_argument("--slug", help="Movie slug to upload")
-    parser.add_argument("--auto", action="store_true", help="Auto-rotate balanced across all categories (Bollywood, South, Hollywood)")
+    parser.add_argument("--auto", action="store_true", help="Auto-rotate balanced across all categories (Bollywood, South, Hollywood Dual Audio)")
     parser.add_argument("--latest", action="store_true", help="Upload the latest verified movie")
     parser.add_argument("--all", action="store_true", help="Upload all unposted movies sequentially")
     parser.add_argument("--chat", help="Target channel ID (e.g. -100...) or @channel_username")
@@ -432,14 +446,14 @@ async def main():
     except ValueError:
         pass
 
-    # Load 7,554 BollyFlix Categorized Movies
+    # Load 100% Hindi/Dual-Audio BollyFlix Categorized Movies
     categorized_movies = load_all_categorized_movies()
     bolly_all = categorized_movies.get("Bollywood", [])
     south_all = categorized_movies.get("South Hindi Dubbed", [])
     holly_all = categorized_movies.get("Hollywood", [])
 
     total_pool = len(bolly_all) + len(south_all) + len(holly_all)
-    print(f"📚 Total Movies in Catalog Pool: {total_pool} (Bollywood: {len(bolly_all)}, South: {len(south_all)}, Hollywood: {len(holly_all)})")
+    print(f"📚 Total Hindi HD Movies in Catalog Pool: {total_pool} (Bollywood: {len(bolly_all)}, South: {len(south_all)}, Hollywood Dual Audio: {len(holly_all)})")
 
     posted = load_posted()
     skipped = load_skipped()
