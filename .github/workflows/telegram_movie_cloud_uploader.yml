@@ -71,6 +71,7 @@ jobs:
         run: |
           git config --global user.name "BollyHub Cloud Bot"
           git config --global user.email "cloudbot@bollyhub.app"
+          git pull --rebase origin main || true
           git add data/telegram_cloud_uploaded.json data/telegram_cloud_skipped.json
           if ! git diff --cached --quiet; then
             git commit -m "chore: Update Telegram cloud uploaded & skipped state [skip ci]"

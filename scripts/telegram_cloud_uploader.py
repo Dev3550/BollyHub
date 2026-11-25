@@ -115,31 +115,35 @@ def get_imdb_meta(clean_title, year=""):
         encoded = requests.compat.quote(query)
         search_url = f'https://v3-cinemeta.strem.io/catalog/movie/top/search={encoded}.json'
         r = requests.get(search_url, headers=BROWSER_HEADERS, timeout=6)
-        if r.status_code == 200:
-            metas = r.json().get('metas', [])
-            if metas:
-                imdb_id = metas[0].get('imdb_id') or metas[0].get('id')
-                if imdb_id and imdb_id.startswith('tt'):
-                    detail_url = f'https://v3-cinemeta.strem.io/meta/movie/{imdb_id}.json'
-                    dr = requests.get(detail_url, headers=BROWSER_HEADERS, timeout=6)
-                    if dr.status_code == 200:
-                        m = dr.json().get('meta', {})
-                        poster = m.get('poster')
-                        if poster and 'small' in poster:
-                            poster = poster.replace('/small/', '/medium/')
-                            if not poster.endswith('.jpg'):
-                                poster += '.jpg'
-                        return {
-                            'imdb_id': imdb_id,
-                            'title': m.get('name') or clean_name,
-                            'year': m.get('year') or year,
-                            'rating': str(m.get('imdbRating') or '7.5'),
-                            'genres': ', '.join(m.get('genres', [])) if m.get('genres') else None,
-                            'director': ', '.join(m.get('director', [])) if m.get('director') else None,
-                            'cast': m.get('cast', [])[:4] if m.get('cast') else [],
-                            'poster_url': poster or m.get('poster'),
-                            'summary': m.get('description') or ''
-                        }
+        metas = r.json().get('metas', []) if r.status_code == 200 else []
+        if not metas:
+            # Fallback search without year
+            fallback_url = f'https://v3-cinemeta.strem.io/catalog/movie/top/search={requests.compat.quote(clean_name)}.json'
+            fr = requests.get(fallback_url, headers=BROWSER_HEADERS, timeout=6)
+            if fr.status_code == 200:
+                metas = fr.json().get('metas', [])
+
+        if metas:
+            imdb_id = metas[0].get('imdb_id') or metas[0].get('id')
+            if imdb_id and imdb_id.startswith('tt'):
+                detail_url = f'https://v3-cinemeta.strem.io/meta/movie/{imdb_id}.json'
+                dr = requests.get(detail_url, headers=BROWSER_HEADERS, timeout=6)
+                if dr.status_code == 200:
+                    m = dr.json().get('meta', {})
+                    poster = m.get('poster')
+                    if poster and '/small/' in poster:
+                        poster = poster.replace('/small/', '/medium/')
+                    return {
+                        'imdb_id': imdb_id,
+                        'title': m.get('name') or clean_name,
+                        'year': m.get('year') or year,
+                        'rating': str(m.get('imdbRating') or '7.5'),
+                        'genres': ', '.join(m.get('genres', [])) if m.get('genres') else None,
+                        'director': ', '.join(m.get('director', [])) if m.get('director') else None,
+                        'cast': m.get('cast', [])[:4] if m.get('cast') else [],
+                        'poster_url': poster or m.get('poster'),
+                        'summary': m.get('description') or ''
+                    }
     except Exception as e:
         print(f"  ⚠️ Cinemeta metadata fetch warning: {e}")
     return None
