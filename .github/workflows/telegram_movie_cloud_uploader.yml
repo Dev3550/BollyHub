@@ -61,7 +61,7 @@ jobs:
           TELEGRAM_API_ID: ${{ secrets.TELEGRAM_API_ID || '37457570' }}
           TELEGRAM_API_HASH: ${{ secrets.TELEGRAM_API_HASH || 'fcd9e2be074ba2e591fbf663f4cec898' }}
           BOLLYHUB_TELEGRAM_BOT_TOKEN: ${{ secrets.BOLLYHUB_TELEGRAM_BOT_TOKEN || '9096712179:AAF2t72UJJQUnW5P12MxDphEHFfWFJd1SV4' }}
-          BOLLYHUB_TELEGRAM_CHAT_ID: ${{ secrets.BOLLYHUB_TELEGRAM_CHAT_ID }}
+          BOLLYHUB_TELEGRAM_CHAT_ID: ${{ secrets.BOLLYHUB_TELEGRAM_CHAT_ID || '-1004487173033' }}
           BOLLYHUB_TELEGRAM_CHANNEL: ${{ secrets.BOLLYHUB_TELEGRAM_CHANNEL || 'https://t.me/+mu3upENk3GFmZTFl' }}
 
       - name: Save Uploaded State & Push to Repository

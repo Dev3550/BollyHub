@@ -28,7 +28,7 @@ function loadEnv() {
 loadEnv();
 
 const BOT_TOKEN = process.env.BOLLYHUB_TELEGRAM_BOT_TOKEN || '9096712179:AAF2t72UJJQUnW5P12MxDphEHFfWFJd1SV4';
-const CHAT_ID = process.env.BOLLYHUB_TELEGRAM_CHAT_ID || '';
+const CHAT_ID = process.env.BOLLYHUB_TELEGRAM_CHAT_ID || '-1004487173033';
 const CHANNEL_LINK = process.env.BOLLYHUB_TELEGRAM_CHANNEL || 'https://t.me/+mu3upENk3GFmZTFl';
 const SITE_URL = 'https://bollyhub.devendradubey61.workers.dev';
 

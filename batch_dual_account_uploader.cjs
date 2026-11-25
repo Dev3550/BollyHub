@@ -160,12 +160,6 @@ async function run() {
   const targets = [
     // Account 1 (dev3550)
     {
-      title: 'Section 375 (2019)',
-      account: 'dev3550',
-      fldId: ACCOUNTS.dev3550.fldId,
-      fastdlUrl: bList[22].fastdlUrl
-    },
-    {
       title: 'Marjaavaan (2019)',
       account: 'dev3550',
       fldId: ACCOUNTS.dev3550.fldId,

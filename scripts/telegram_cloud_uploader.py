@@ -39,7 +39,7 @@ if env_file.exists():
 API_ID = os.environ.get("TELEGRAM_API_ID") or "37457570"
 API_HASH = os.environ.get("TELEGRAM_API_HASH") or "fcd9e2be074ba2e591fbf663f4cec898"
 BOT_TOKEN = os.environ.get("BOLLYHUB_TELEGRAM_BOT_TOKEN") or os.environ.get("TELEGRAM_BOT_TOKEN") or "9096712179:AAF2t72UJJQUnW5P12MxDphEHFfWFJd1SV4"
-CHAT_ID = os.environ.get("BOLLYHUB_TELEGRAM_CHAT_ID") or os.environ.get("TELEGRAM_CHAT_ID")
+CHAT_ID = os.environ.get("BOLLYHUB_TELEGRAM_CHAT_ID") or os.environ.get("TELEGRAM_CHAT_ID") or "-1004487173033"
 CHANNEL_LINK = os.environ.get("BOLLYHUB_TELEGRAM_CHANNEL") or "https://t.me/+mu3upENk3GFmZTFl"
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
