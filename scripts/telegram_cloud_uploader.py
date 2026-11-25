@@ -125,14 +125,19 @@ def get_imdb_meta(clean_title, year=""):
 
         if metas:
             imdb_id = metas[0].get('imdb_id') or metas[0].get('id')
+            search_poster = metas[0].get('poster')
+            search_bg = metas[0].get('background')
             if imdb_id and imdb_id.startswith('tt'):
                 detail_url = f'https://v3-cinemeta.strem.io/meta/movie/{imdb_id}.json'
                 dr = requests.get(detail_url, headers=BROWSER_HEADERS, timeout=6)
                 if dr.status_code == 200:
                     m = dr.json().get('meta', {})
-                    poster = m.get('poster')
+                    poster = m.get('poster') or search_poster
                     if poster and '/small/' in poster:
                         poster = poster.replace('/small/', '/medium/')
+                    background = m.get('background') or search_bg
+                    if background and '/small/' in background:
+                        background = background.replace('/small/', '/medium/')
                     return {
                         'imdb_id': imdb_id,
                         'title': m.get('name') or clean_name,
@@ -141,11 +146,46 @@ def get_imdb_meta(clean_title, year=""):
                         'genres': ', '.join(m.get('genres', [])) if m.get('genres') else None,
                         'director': ', '.join(m.get('director', [])) if m.get('director') else None,
                         'cast': m.get('cast', [])[:4] if m.get('cast') else [],
-                        'poster_url': poster or m.get('poster'),
+                        'poster_url': poster,
+                        'background_url': background,
                         'summary': m.get('description') or ''
                     }
     except Exception as e:
         print(f"  ⚠️ Cinemeta metadata fetch warning: {e}")
+    return None
+
+def fetch_bollyspice_cover(title):
+    """
+    Directly scrapes the authentic movie cover poster from bollyspice.in
+    as a high-fidelity fallback when IMDb or Cinemeta lacks a poster.
+    """
+    try:
+        from bs4 import BeautifulSoup
+        clean = re.sub(r'[\{\[\(].*?[\}\]\)]', '', title)
+        words = [w for w in re.split(r'[^a-zA-Z0-9]+', clean) if len(w) > 2 and w.lower() not in ['hindi', 'dual', 'audio', 'movie', 'full', 'download', '720p', '480p', '1080p']]
+        query = ' '.join(words[:3])
+        if not query:
+            return None
+        s = requests.Session()
+        s.headers.update({
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Referer': 'https://bollyspice.in/'
+        })
+        s.get('https://bollyspice.in/', timeout=5)
+        r = s.post('https://bollyspice.in/index.php?do=search', data={'do': 'search', 'subaction': 'search', 'story': query}, timeout=8)
+        if r.status_code == 200:
+            soup = BeautifulSoup(r.text, 'html.parser')
+            for a in soup.find_all('a'):
+                img = a.find('img')
+                if img and img.get('src'):
+                    src = img['src']
+                    if '/uploads/posts/covers/' in src:
+                        src_lower = src.lower()
+                        if any(w.lower() in src_lower for w in words):
+                            full_url = f'https://bollyspice.in{src}' if src.startswith('/') else src
+                            return full_url
+    except Exception as e:
+        print(f"  ⚠️ BollySpice cover fetch warning: {e}")
     return None
 
 def load_all_categorized_movies():
@@ -319,15 +359,31 @@ def download_file(url, target_path):
         return False
 
 def download_thumbnail(poster_url, target_path):
-    """Downloads poster as JPG thumbnail for video player preview."""
+    """Downloads poster as JPG thumbnail for video player preview with WebP support."""
+    if not poster_url:
+        return None
     try:
-        r = requests.get(poster_url, headers=BROWSER_HEADERS, timeout=12)
+        headers = {**BROWSER_HEADERS}
+        if 'bollyspice.in' in poster_url:
+            headers['Referer'] = 'https://bollyspice.in/'
+        r = requests.get(poster_url, headers=headers, timeout=12)
         if r.status_code == 200 and len(r.content) > 1000:
+            content_type = r.headers.get('content-type', '').lower()
+            if 'webp' in content_type or poster_url.lower().endswith('.webp'):
+                try:
+                    from PIL import Image
+                    import io
+                    img = Image.open(io.BytesIO(r.content)).convert('RGB')
+                    img.save(str(target_path), 'JPEG', quality=95)
+                    return str(target_path)
+                except Exception as conv_err:
+                    print(f"  ⚠️ WebP conversion error: {conv_err}")
+
             with open(target_path, "wb") as f:
                 f.write(r.content)
             return str(target_path)
     except Exception as e:
-        print(f"  ⚠️ Thumbnail download failed: {e}")
+        print(f"  ⚠️ Thumbnail download failed ({poster_url[:50]}): {e}")
     return None
 
 def format_caption(movie):
@@ -616,12 +672,22 @@ async def main():
                 print(f"  🌟 IMDb Enriched: {live_meta['title']} ({live_meta['year']}) | ★ {live_meta['rating']}")
                 if live_meta.get("poster_url"):
                     movie["poster_url"] = live_meta["poster_url"]
+                elif live_meta.get("background_url"):
+                    movie["poster_url"] = live_meta["background_url"]
                 movie_imdb = movie.setdefault("imdb", {})
                 if live_meta.get("rating"): movie_imdb["rating"] = live_meta["rating"]
                 if live_meta.get("genres"): movie_imdb["genres"] = live_meta["genres"]
                 if live_meta.get("director"): movie_imdb["director"] = live_meta["director"]
                 if live_meta.get("cast"): movie_imdb["cast"] = live_meta["cast"]
                 if live_meta.get("summary"): movie_imdb["summary"] = live_meta["summary"]
+                if live_meta.get("background_url"): movie_imdb["background_url"] = live_meta["background_url"]
+
+        # Fallback to authentic source website cover from bollyspice.in
+        if not movie.get("poster_url"):
+            spice_cover = fetch_bollyspice_cover(movie["title"])
+            if spice_cover:
+                print(f"  🌐 Found source website poster from BollySpice: {spice_cover[:70]}...")
+                movie["poster_url"] = spice_cover
 
         # 1. Resolve Google CDN direct URL
         direct_url = resolve_direct_link(fastdl_url)
@@ -637,12 +703,29 @@ async def main():
         temp_thumb = work_dir / f"{slug}_thumb.jpg"
 
         try:
-            # 2. Prepare Thumbnail (Real Movie Poster or Official 3D Logo)
+            # 2. Prepare Thumbnail (Real Movie Poster, Backdrop, or Source Website Cover)
             thumb_path = None
             if movie.get("poster_url"):
                 print(f"  🖼️ Fetching HD poster: {movie['poster_url'][:70]}...")
                 thumb_path = download_thumbnail(movie["poster_url"], temp_thumb)
+
+            if not thumb_path and movie.get("imdb", {}).get("background_url"):
+                bg_url = movie["imdb"]["background_url"]
+                print(f"  🖼️ Fetching IMDb backdrop image: {bg_url[:70]}...")
+                thumb_path = download_thumbnail(bg_url, temp_thumb)
+                if thumb_path:
+                    movie["poster_url"] = bg_url
+
+            if not thumb_path:
+                spice_cover = fetch_bollyspice_cover(movie["title"])
+                if spice_cover:
+                    print(f"  🖼️ Fetching BollySpice source cover: {spice_cover[:70]}...")
+                    thumb_path = download_thumbnail(spice_cover, temp_thumb)
+                    if thumb_path:
+                        movie["poster_url"] = spice_cover
+
             if not thumb_path and DEFAULT_THUMB.exists():
+                print("  ⚠️ All poster sources failed. Using default channel logo.")
                 thumb_path = str(DEFAULT_THUMB)
 
             # 3. High-Speed Download with HTTP Error Check
