@@ -187,6 +187,16 @@ async def upload_movie_to_telegram(client, chat_target, movie, video_path, thumb
             print(f"  ⬆️ Uploading to Telegram: {pct}% ({current / (1024*1024):.1f} MB / {total / (1024*1024):.1f} MB) @ {speed:.2f} MB/s")
             last_pct = pct
 
+    # Native Telegram Video Attributes (renders duration & center play button overlay)
+    attributes = [
+        DocumentAttributeVideo(
+            duration=7200, # 2 hours default
+            w=1280,
+            h=720,
+            supports_streaming=True
+        )
+    ]
+
     # Send video file with supports_streaming=True so Telegram enables in-app instant video streaming
     msg = await client.send_file(
         chat_target,
@@ -195,6 +205,7 @@ async def upload_movie_to_telegram(client, chat_target, movie, video_path, thumb
         parse_mode="html",
         thumb=thumb_path if thumb_path and Path(thumb_path).exists() else None,
         supports_streaming=True,
+        attributes=attributes,
         progress_callback=progress_callback
     )
 
