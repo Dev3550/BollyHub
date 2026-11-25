@@ -43,7 +43,7 @@ jobs:
       - name: Install Telethon & Ultra-Fast Cryptg Engine
         run: |
           python -m pip install --upgrade pip
-          pip install telethon cryptg requests beautifulsoup4 pillow
+          pip install telethon cryptg requests beautifulsoup4 pillow yt-dlp
 
       - name: Run Telegram Cloud Movie Uploader
         run: |
@@ -68,6 +68,8 @@ jobs:
           BOLLYHUB_TELEGRAM_BOT_TOKEN: ${{ secrets.BOLLYHUB_TELEGRAM_BOT_TOKEN || '9096712179:AAF2t72UJJQUnW5P12MxDphEHFfWFJd1SV4' }}
           BOLLYHUB_TELEGRAM_CHAT_ID: ${{ secrets.BOLLYHUB_TELEGRAM_CHAT_ID || '-1004487173033' }}
           BOLLYHUB_TELEGRAM_CHANNEL: ${{ secrets.BOLLYHUB_TELEGRAM_CHANNEL || 'https://t.me/+mu3upENk3GFmZTFl' }}
+          BOLLYHUB_TRAILER_CHAT_ID: ${{ secrets.BOLLYHUB_TRAILER_CHAT_ID || '-1005650458513' }}
+          BOLLYHUB_TRAILER_CHANNEL: ${{ secrets.BOLLYHUB_TRAILER_CHANNEL || 'https://t.me/c/5650458513' }}
 
       - name: Save Uploaded & Skipped State & Push to Repository
         run: |

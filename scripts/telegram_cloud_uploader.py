@@ -46,6 +46,8 @@ API_HASH = os.environ.get("TELEGRAM_API_HASH") or "fcd9e2be074ba2e591fbf663f4cec
 BOT_TOKEN = os.environ.get("BOLLYHUB_TELEGRAM_BOT_TOKEN") or os.environ.get("TELEGRAM_BOT_TOKEN") or "9096712179:AAF2t72UJJQUnW5P12MxDphEHFfWFJd1SV4"
 CHAT_ID = os.environ.get("BOLLYHUB_TELEGRAM_CHAT_ID") or os.environ.get("TELEGRAM_CHAT_ID") or "-1004487173033"
 CHANNEL_LINK = os.environ.get("BOLLYHUB_TELEGRAM_CHANNEL") or "https://t.me/+mu3upENk3GFmZTFl"
+TRAILER_CHAT_ID = os.environ.get("BOLLYHUB_TRAILER_CHAT_ID") or "-1005650458513"
+TRAILER_CHANNEL_LINK = os.environ.get("BOLLYHUB_TRAILER_CHANNEL") or "https://t.me/c/5650458513"
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 MOVIES_FILE = DATA_DIR / "movies.json"
@@ -148,6 +150,7 @@ def get_imdb_meta(clean_title, year=""):
                         'cast': m.get('cast', [])[:4] if m.get('cast') else [],
                         'poster_url': poster,
                         'background_url': background,
+                        'trailer': m.get('trailer') or (m.get('trailers', [{}])[0].get('source') if m.get('trailers') else None),
                         'summary': m.get('description') or ''
                     }
     except Exception as e:
@@ -911,6 +914,138 @@ async def upload_movie_to_telegram(client, chat_target, movie, video_path, thumb
     print(f"   Message ID: {msg.id}")
     return msg.id
 
+def download_official_trailer(movie, target_path):
+    """
+    Downloads the official HD trailer for the movie using yt-dlp.
+    Prioritizes Cinemeta / IMDb trailer key, otherwise searches YouTube for official trailer.
+    Returns True if successful, False otherwise.
+    """
+    try:
+        import yt_dlp
+    except ImportError:
+        print("  ⚠️ yt-dlp not installed, skipping official trailer download.")
+        return False
+
+    title = movie.get("title", "")
+    year = movie.get("year", "")
+    trailer_key = movie.get("imdb", {}).get("trailer")
+
+    ydl_opts = {
+        'format': 'bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/best[height<=720][ext=mp4]/best[height<=720]/best',
+        'outtmpl': str(target_path),
+        'max_filesize': 60 * 1024 * 1024,
+        'noplaylist': True,
+        'quiet': True,
+        'no_warnings': True,
+    }
+
+    sources = []
+    if trailer_key:
+        if str(trailer_key).startswith("http"):
+            sources.append(str(trailer_key))
+        else:
+            sources.append(f"https://www.youtube.com/watch?v={trailer_key}")
+
+    # Search queries: Hindi official trailer, then official trailer
+    sources.append(f"ytsearch1:{title} {year} official trailer hindi")
+    sources.append(f"ytsearch1:{title} {year} official trailer")
+
+    print(f"  🎬 Searching & downloading official HD trailer for: {title} ({year})...")
+    for src in sources:
+        try:
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                ydl.download([src])
+            if target_path.exists() and target_path.stat().st_size > 100 * 1024:
+                size_mb = target_path.stat().st_size / (1024 * 1024)
+                print(f"  ✅ Official trailer downloaded successfully: {size_mb:.1f} MB")
+                return True
+        except Exception as e:
+            print(f"  ⚠️ Trailer source attempt notice ({src[:45]}): {e}")
+            if target_path.exists():
+                try:
+                    target_path.unlink()
+                except Exception:
+                    pass
+    return False
+
+def format_trailer_caption(movie, main_post_link):
+    title = movie.get("title", "Movie")
+    year = movie.get("year", "2024")
+    imdb_data = movie.get("imdb", {})
+    rating = imdb_data.get("rating", "7.5")
+    genres = imdb_data.get("genres") or movie.get("category", "HD Movie")
+    cast = ", ".join(imdb_data.get("cast", [])) if imdb_data.get("cast") else None
+
+    caption = (
+        f"🎬 <b>Official HD Trailer: {title} ({year})</b>\n\n"
+        f"⭐ <b>IMDb:</b> ★ {rating}/10 | <b>Category:</b> {movie.get('category', 'HD Movie')}\n"
+        f"🎭 <b>Genres:</b> {genres}\n"
+    )
+    if cast:
+        caption += f"👥 <b>Starring:</b> {cast}\n"
+
+    caption += (
+        f"\n🔥 <b>Full Movie hamare Main Channel par upload ho chuki hai!</b>\n\n"
+        f"📥 <b>Full Movie Dekhne / Download Karne Ke Liye Yahan Click Karein:</b>\n"
+        f"👉 <a href=\"{main_post_link}\"><b>Click Here To Download Full Movie</b></a>\n\n"
+        f"📢 <b>Join Main Movie Channel:</b>\n"
+        f"🔗 <a href=\"{CHANNEL_LINK}\"><b>{CHANNEL_LINK}</b></a>"
+    )
+    return caption
+
+async def post_official_trailer_to_promo(client, trailer_chat, main_chat, main_msg_id, movie, thumb_path, work_dir):
+    """Uploads the official movie trailer to the second (promo) channel with direct link to main movie post."""
+    temp_trailer = work_dir / f"{movie['slug']}_official_trailer.mp4"
+    try:
+        # Calculate main post direct URL
+        main_chat_str = str(main_chat)
+        if main_chat_str.startswith("-100"):
+            clean_id = main_chat_str[4:]
+            main_post_link = f"https://t.me/c/{clean_id}/{main_msg_id}"
+        elif main_chat_str.startswith("@"):
+            main_post_link = f"https://t.me/{main_chat_str[1:]}/{main_msg_id}"
+        else:
+            main_post_link = CHANNEL_LINK
+
+        success = download_official_trailer(movie, temp_trailer)
+        if not success or not temp_trailer.exists():
+            print(f"  ⚠️ Could not obtain official trailer for {movie['title']}. Skipping promo post.")
+            return None
+
+        caption = format_trailer_caption(movie, main_post_link)
+        print(f"  📢 Posting official trailer to Promo Channel ({trailer_chat})...")
+        
+        trailer_attributes = [
+            DocumentAttributeVideo(
+                duration=120,
+                w=1280,
+                h=720,
+                supports_streaming=True
+            )
+        ]
+
+        trailer_input = await fast_upload_file(client, str(temp_trailer), max_workers=2)
+        promo_msg = await client.send_file(
+            trailer_chat,
+            trailer_input,
+            caption=caption,
+            parse_mode="html",
+            thumb=thumb_path if thumb_path and Path(thumb_path).exists() else None,
+            supports_streaming=True,
+            attributes=trailer_attributes
+        )
+        print(f"  ⭐ Official trailer successfully posted to Promo Channel! (Message ID: {promo_msg.id})")
+        return promo_msg.id
+    except Exception as e:
+        print(f"  ⚠️ Failed to post official trailer to promo channel: {e}")
+        return None
+    finally:
+        if temp_trailer.exists():
+            try:
+                temp_trailer.unlink()
+            except Exception:
+                pass
+
 async def main():
     parser = argparse.ArgumentParser(description="BollyHub Telegram Cloud Movie Uploader")
     parser.add_argument("--slug", help="Movie slug to upload")
@@ -918,6 +1053,7 @@ async def main():
     parser.add_argument("--latest", action="store_true", help="Upload the latest verified movie")
     parser.add_argument("--all", action="store_true", help="Upload all unposted movies sequentially")
     parser.add_argument("--chat", help="Target channel ID (e.g. -100...) or @channel_username")
+    parser.add_argument("--trailer-chat", help="Promo / Trailer channel ID (e.g. -100...)")
     parser.add_argument("--limit", type=int, default=1, help="Target number of SUCCESSFUL uploads (Default: 1)")
     args = parser.parse_args()
 
@@ -933,6 +1069,13 @@ async def main():
     try:
         if str(target_chat).startswith("-100") or str(target_chat).startswith("-"):
             target_chat = int(target_chat)
+    except ValueError:
+        pass
+
+    trailer_chat = args.trailer_chat or TRAILER_CHAT_ID
+    try:
+        if trailer_chat and (str(trailer_chat).startswith("-100") or str(trailer_chat).startswith("-")):
+            trailer_chat = int(trailer_chat)
     except ValueError:
         pass
 
@@ -1099,6 +1242,10 @@ async def main():
                 save_posted(slug)
                 successful_uploads += 1
                 print(f"  ⭐ Successfully posted [{successful_uploads}/{args.limit}] {title} to Telegram Channel!")
+
+                # 5. Post Official HD Trailer to Promo / Trailer Channel!
+                if trailer_chat:
+                    await post_official_trailer_to_promo(client, trailer_chat, target_chat, msg_id, movie, thumb_path, work_dir)
         except Exception as e:
             print(f"  ❌ Error processing {title}: {e}")
             save_skipped(slug)
