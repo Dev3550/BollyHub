@@ -447,6 +447,45 @@ const VERIFIED_MASTER_REGISTRY = {
     poster: 'https://images.metahub.space/poster/medium/tt9248934/img.jpg',
     backdrop: 'https://images.metahub.space/background/medium/tt9248934/img'
   },
+  'section 375': {
+    imdbId: 'tt8144834',
+    title: 'Section 375',
+    year: '2019',
+    rating: '8.1',
+    categories: ['BOLLYWOOD', 'CRIME', 'DRAMA'],
+    genres: 'Crime, Drama, Thriller',
+    director: 'Ajay Bahl',
+    cast: ['Akshaye Khanna', 'Richa Chadha', 'Rahul Bhat', 'Meera Chopra'],
+    summary: 'A celebrated Bollywood director is accused of rape by a female costume designer. A prominent defense lawyer and an idealistic public prosecutor clash in a gripping courtroom battle of evidence and consent.',
+    poster: 'https://images.metahub.space/poster/medium/tt8144834/img.jpg',
+    backdrop: 'https://images.metahub.space/background/medium/tt8144834/img'
+  },
+  'made in china': {
+    imdbId: 'tt8983180',
+    title: 'Made in China',
+    year: '2019',
+    rating: '6.2',
+    categories: ['BOLLYWOOD', 'COMEDY'],
+    genres: 'Comedy, Drama',
+    director: 'Mikhil Musale',
+    cast: ['Rajkummar Rao', 'Mouni Roy', 'Boman Irani', 'Paresh Rawal'],
+    summary: 'A struggling Gujarati businessman takes an unconventional trip to China to acquire an aphrodisiac soup recipe, unleashing an unexpected retail sensation that changes his fortunes in Ahmedabad.',
+    poster: 'https://images.metahub.space/poster/medium/tt8983180/img.jpg',
+    backdrop: 'https://images.metahub.space/background/medium/tt8983180/img'
+  },
+  'ujda chaman': {
+    imdbId: 'tt11046300',
+    title: 'Ujda Chaman',
+    year: '2019',
+    rating: '6.8',
+    categories: ['BOLLYWOOD', 'COMEDY'],
+    genres: 'Comedy, Drama',
+    director: 'Abhishek Pathak',
+    cast: ['Sunny Singh', 'Maanvi Gagroo', 'Saurabh Shukla', 'Karishma Sharma'],
+    summary: 'A 30-year-old Hindi lecturer suffering from premature baldness faces social ridicule and family pressure to marry before turning 31 or remain a bachelor for life.',
+    poster: 'https://images.metahub.space/poster/medium/tt11046300/img.jpg',
+    backdrop: 'https://images.metahub.space/background/medium/tt11046300/img'
+  },
   'article 15': {
     imdbId: 'tt10324144',
     title: 'Article 15',

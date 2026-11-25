@@ -1,6 +1,6 @@
 // D:\BollyHub\scripts\telegram-poster.cjs
-// Official Telegram Auto-Poster for BollyHub
-// Posts high-converting, studio-grade movie releases with verified IMDb posters, synopsis, and instant stream/download buttons
+// Official Telegram Mini App Auto-Poster for BollyHub
+// Posts movies with verified IMDb posters, synopsis, and In-Telegram Mini App Player buttons (Zero Strikes, Pure Traffic)
 
 const fs = require('fs');
 const path = require('path');
@@ -9,31 +9,27 @@ const path = require('path');
 const MOVIES_PATH = path.join(__dirname, '..', 'data', 'movies.json');
 const LOG_PATH = path.join(__dirname, '..', 'data', 'telegram-posted.json');
 const ENV_PATH = path.join(__dirname, '..', '.env');
-const ROOT_ENV_PATH = path.join('d:', 'Exotic Clean', '.env');
 
 function loadEnv() {
-  const envFiles = [ENV_PATH, ROOT_ENV_PATH];
-  for (const ef of envFiles) {
-    if (fs.existsSync(ef)) {
-      const lines = fs.readFileSync(ef, 'utf8').split('\n');
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (!trimmed || trimmed.startsWith('#')) continue;
-        const [k, ...v] = trimmed.split('=');
-        if (k && v.length) {
-          const key = k.trim();
-          const val = v.join('=').trim().replace(/^["']|["']$/g, '');
-          if (!process.env[key]) process.env[key] = val;
-        }
+  if (fs.existsSync(ENV_PATH)) {
+    const lines = fs.readFileSync(ENV_PATH, 'utf8').split('\n');
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith('#')) continue;
+      const [k, ...v] = trimmed.split('=');
+      if (k && v.length) {
+        const key = k.trim();
+        const val = v.join('=').trim().replace(/^["']|["']$/g, '');
+        process.env[key] = val;
       }
     }
   }
 }
 loadEnv();
 
-const BOT_TOKEN = process.env.BOLLYHUB_TELEGRAM_BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN || '8770394156:AAFZCPyXcOl1eJc1bMrjzuasHOZlwku-2vE';
-const CHAT_ID = process.env.BOLLYHUB_TELEGRAM_CHAT_ID || process.env.TELEGRAM_CHAT_ID || '-1004296356232';
-const CHANNEL_LINK = process.env.BOLLYHUB_TELEGRAM_CHANNEL || process.env.TELEGRAM_CHANNEL_LINK || 'https://t.me/+-bJlRxoLc7ViMWY1';
+const BOT_TOKEN = process.env.BOLLYHUB_TELEGRAM_BOT_TOKEN || '9096712179:AAF2t72UJJQUnW5P12MxDphEHFfWFJd1SV4';
+const CHAT_ID = process.env.BOLLYHUB_TELEGRAM_CHAT_ID || '';
+const CHANNEL_LINK = process.env.BOLLYHUB_TELEGRAM_CHANNEL || 'https://t.me/+mu3upENk3GFmZTFl';
 const SITE_URL = 'https://bollyhub.devendradubey61.workers.dev';
 
 function getPostedSlugs() {
@@ -64,20 +60,19 @@ function formatOfficialCaption(movie) {
   const year = movie.release_year || '2024';
   const title = movie.imdb?.title || movie.title.replace(/\(.*?\)/g, '').trim();
   const genres = movie.imdb?.genres || (movie.categories || ['Bollywood']).join(', ');
-  const director = movie.imdb?.director || 'Top Bollywood Filmmakers';
-  const castList = (movie.imdb?.cast && movie.imdb.cast.length) ? movie.imdb.cast.slice(0, 4).join(', ') : 'Ensemble Star Cast';
-  const summary = (movie.imdb?.summary || 'Watch this blockbuster movie in full high definition online on BollyHub.').slice(0, 280);
+  const director = movie.imdb?.director || 'Top Filmmakers';
+  const castList = (movie.imdb?.cast && movie.imdb.cast.length) ? movie.imdb.cast.slice(0, 4).join(', ') : 'Popular Cast';
+  const summary = (movie.imdb?.summary || 'Watch this blockbuster movie in full high definition inside Telegram with zero buffering.').slice(0, 260);
 
   const watchUrl = `${SITE_URL}/watch/${movie.slug}/`;
-  const downloadUrl = `${SITE_URL}/download/${movie.slug}/`;
 
   return `👑 <b>BOLLYHUB™ OFFICIAL RELEASE</b> 👑
 ━━━━━━━━━━━━━━━━━━━━━
 🎬 <b>${title.toUpperCase()}</b> (${year})
-${stars} <b>IMDb Rating:</b> ★ <b>${rating} / 10</b>
+${stars} <b>IMDb:</b> ★ <b>${rating} / 10</b>
 
-🔊 <b>Audio:</b> <code>Hindi [Original 5.1 DD]</code>
-💿 <b>Quality:</b> <code>720p HD • Multi-Bitrate • FastDL</code>
+🔊 <b>Audio:</b> <code>Hindi Original 5.1 DD</code>
+💿 <b>Quality:</b> <code>720p HD • Web-DL / BluRay</code>
 🎭 <b>Genres:</b> <i>${genres}</i>
 🎬 <b>Director:</b> <i>${director}</i>
 👥 <b>Starring:</b> <i>${castList}</i>
@@ -87,38 +82,41 @@ ${stars} <b>IMDb Rating:</b> ★ <b>${rating} / 10</b>
 <i>"${summary}..."</i>
 
 ━━━━━━━━━━━━━━━━━━━━━
-🍿 <b>Stream Online (Zero Ads / Multi-Audio):</b>
-👉 <a href="${watchUrl}">${watchUrl}</a>
-
-⚡️ <b>1-Click Fast Direct Download:</b>
-👉 <a href="${downloadUrl}">${downloadUrl}</a>
-
-━━━━━━━━━━━━━━━━━━━━━
-🛡 <i>BollyHub Official Channel &mdash; Always Free, Always Fast</i>
-📢 <b>Join Official Community:</b> ${CHANNEL_LINK}`;
+🍿 <b>Tap below to Play Movie directly inside Telegram!</b>
+🛡 <i>100% Ad-Free • Zero Buffering • Fast Cloud Streaming</i>
+📢 <b>Official Channel:</b> ${CHANNEL_LINK}`;
 }
 
-async function sendTelegramPost(movie) {
+async function sendTelegramPost(movie, targetChatId = CHAT_ID) {
+  if (!targetChatId) {
+    console.error('❌ CHAT_ID is missing! Please set BOLLYHUB_TELEGRAM_CHAT_ID in .env or pass as argument.');
+    return false;
+  }
+
   const posterUrl = movie.poster_url;
   const caption = formatOfficialCaption(movie);
   const watchUrl = `${SITE_URL}/watch/${movie.slug}/`;
   const downloadUrl = `${SITE_URL}/download/${movie.slug}/`;
 
+  // Telegram In-App Mini App Web Player Button
   const inlineKeyboard = {
     inline_keyboard: [
       [
-        { text: '▶️ Stream Full HD Online', url: watchUrl },
-        { text: '⚡️ 1-Click Direct Download', url: downloadUrl }
+        {
+          text: '▶️ 🍿 Watch in Telegram Player',
+          web_app: { url: watchUrl }
+        }
       ],
       [
-        { text: '👑 Join BollyHub Official Channel', url: CHANNEL_LINK }
+        { text: '⚡️ 1-Click Fast Download', url: downloadUrl },
+        { text: '👑 Join Channel', url: CHANNEL_LINK }
       ]
     ]
   };
 
   const endpoint = `https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`;
   const payload = {
-    chat_id: CHAT_ID,
+    chat_id: targetChatId,
     photo: posterUrl,
     caption: caption,
     parse_mode: 'HTML',
@@ -148,9 +146,9 @@ async function sendTelegramPost(movie) {
 
 async function run() {
   console.log('===============================================================');
-  console.log('📢 BOLLYHUB OFFICIAL TELEGRAM AUTO-POSTER');
+  console.log('📢 BOLLYHUB TELEGRAM MINI APP AUTO-POSTER');
   console.log(`🤖 Bot Token: ${BOT_TOKEN.slice(0, 10)}...`);
-  console.log(`📌 Chat ID: ${CHAT_ID}`);
+  console.log(`📌 Chat ID: ${CHAT_ID || 'NOT SET YET'}`);
   console.log(`🔗 Channel: ${CHANNEL_LINK}`);
   console.log('===============================================================');
 
@@ -165,6 +163,8 @@ async function run() {
   const args = process.argv.slice(2);
   const isAll = args.includes('--all');
   const isLatest = args.includes('--latest');
+  const chatArgIdx = args.indexOf('--chat');
+  const customChat = chatArgIdx !== -1 ? args[chatArgIdx + 1] : CHAT_ID;
   const slugIdx = args.indexOf('--slug');
   const targetSlug = slugIdx !== -1 ? args[slugIdx + 1] : null;
 
@@ -174,13 +174,12 @@ async function run() {
       console.error('Movie not found for slug:', targetSlug);
       return;
     }
-    await sendTelegramPost(m);
+    await sendTelegramPost(m, customChat);
     return;
   }
 
-  // Filter unposted verified movies
   const queue = movies.filter(m => !posted.has(m.slug));
-  console.log(`Found ${movies.length} total movies in catalog. Unposted in Telegram: ${queue.length}`);
+  console.log(`Found ${movies.length} total movies in catalog. Unposted: ${queue.length}`);
 
   if (queue.length === 0) {
     console.log('🎉 All movies have already been posted to Telegram!');
@@ -189,19 +188,18 @@ async function run() {
 
   if (isLatest) {
     const latest = queue[queue.length - 1];
-    console.log(`Posting latest unposted movie: "${latest.title}"`);
-    await sendTelegramPost(latest);
+    console.log(`Posting latest movie: "${latest.title}"`);
+    await sendTelegramPost(latest, customChat);
     return;
   }
 
-  // Post in batches with 3-second delay
   const limit = isAll ? queue.length : Math.min(3, queue.length);
   console.log(`🚀 Posting next ${limit} movies to Official Telegram Channel...\n`);
 
   for (let i = 0; i < limit; i++) {
     const m = queue[i];
     console.log(`[${i + 1}/${limit}] Posting: "${m.title}"`);
-    await sendTelegramPost(m);
+    await sendTelegramPost(m, customChat);
     if (i < limit - 1) {
       console.log('Waiting 3 seconds...');
       await new Promise(r => setTimeout(r, 3000));
