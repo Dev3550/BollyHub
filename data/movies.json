@@ -1,5 +1,56 @@
 [
   {
+    "id": "marjaavaan-2019",
+    "title": "Marjaavaan (2019)",
+    "slug": "marjaavaan-2019",
+    "categories": [
+      "BOLLYWOOD",
+      "ACTION"
+    ],
+    "release_year": "2019",
+    "poster_url": "https://images.metahub.space/poster/medium/tt9248934/img.jpg",
+    "backdrop_url": "https://images.metahub.space/background/medium/tt9248934/img",
+    "imdb": {
+      "id": "tt9248934",
+      "rating": "4.0",
+      "title": "Marjaavaan",
+      "director": "Milap Zaveri",
+      "cast": [
+        "Sidharth Malhotra",
+        "Riteish Deshmukh",
+        "Tara Sutaria",
+        "Rakul Preet Singh"
+      ],
+      "genres": "Action, Drama, Romance",
+      "summary": "Raghu, a loyal enforcer for a water mafia don, falls in love with a mute Kashmiri girl, drawing the intense envy and deadly wrath of the kingpin's pint-sized son Vishnu."
+    },
+    "earnvid_filecode": "awhnhppdn8ax",
+    "embed_url": "https://morencius.com/embed/awhnhppdn8ax",
+    "canplay": 1,
+    "primary_account": "dev3550",
+    "qualities": [
+      {
+        "quality_name": "720P WEB-DL",
+        "file_id": "awhnhppdn8ax",
+        "filecode": "awhnhppdn8ax",
+        "account": "dev3550",
+        "account_label": "Primary Node (dev3550)",
+        "embed_url": "https://morencius.com/embed/awhnhppdn8ax",
+        "mirrors": [
+          {
+            "provider": "EarnVids Fast Direct Download (dev3550)",
+            "url": "https://morencius.com/d/awhnhppdn8ax"
+          },
+          {
+            "provider": "EarnVids High Speed Stream (dev3550)",
+            "url": "https://morencius.com/file/awhnhppdn8ax"
+          }
+        ]
+      }
+    ],
+    "screenshots": []
+  },
+  {
     "id": "section-375-2019",
     "title": "Section 375 (2019)",
     "slug": "section-375-2019",
@@ -27,7 +78,7 @@
     },
     "earnvid_filecode": "cakwxk2pd8r8",
     "embed_url": "https://morencius.com/embed/cakwxk2pd8r8",
-    "canplay": 0,
+    "canplay": 1,
     "primary_account": "dev3550",
     "qualities": [
       {
@@ -628,6 +679,108 @@
           {
             "provider": "EarnVids High Speed Stream (dev3550)",
             "url": "https://morencius.com/file/18ofgbefvtmf"
+          }
+        ]
+      }
+    ],
+    "screenshots": []
+  },
+  {
+    "id": "ujda-chaman-2019",
+    "title": "Ujda Chaman (2019)",
+    "slug": "ujda-chaman-2019",
+    "categories": [
+      "BOLLYWOOD",
+      "COMEDY"
+    ],
+    "release_year": "2019",
+    "poster_url": "https://images.metahub.space/poster/medium/tt11046300/img.jpg",
+    "backdrop_url": "https://images.metahub.space/background/medium/tt11046300/img",
+    "imdb": {
+      "id": "tt11046300",
+      "rating": "6.8",
+      "title": "Ujda Chaman",
+      "director": "Abhishek Pathak",
+      "cast": [
+        "Sunny Singh",
+        "Maanvi Gagroo",
+        "Saurabh Shukla",
+        "Karishma Sharma"
+      ],
+      "genres": "Comedy, Drama",
+      "summary": "A 30-year-old Hindi lecturer suffering from premature baldness faces social ridicule and family pressure to marry before turning 31 or remain a bachelor for life."
+    },
+    "earnvid_filecode": "n79wmpj7a1eq",
+    "embed_url": "https://morencius.com/embed/n79wmpj7a1eq",
+    "canplay": 0,
+    "primary_account": "Dev333",
+    "qualities": [
+      {
+        "quality_name": "720P WEB-DL",
+        "file_id": "n79wmpj7a1eq",
+        "filecode": "n79wmpj7a1eq",
+        "account": "Dev333",
+        "account_label": "Secondary Node (Dev333)",
+        "embed_url": "https://morencius.com/embed/n79wmpj7a1eq",
+        "mirrors": [
+          {
+            "provider": "EarnVids Fast Direct Download (Dev333)",
+            "url": "https://morencius.com/d/n79wmpj7a1eq"
+          },
+          {
+            "provider": "EarnVids High Speed Stream (Dev333)",
+            "url": "https://morencius.com/file/n79wmpj7a1eq"
+          }
+        ]
+      }
+    ],
+    "screenshots": []
+  },
+  {
+    "id": "made-in-china-2019",
+    "title": "Made in China (2019)",
+    "slug": "made-in-china-2019",
+    "categories": [
+      "BOLLYWOOD",
+      "COMEDY"
+    ],
+    "release_year": "2019",
+    "poster_url": "https://images.metahub.space/poster/medium/tt8983180/img.jpg",
+    "backdrop_url": "https://images.metahub.space/background/medium/tt8983180/img",
+    "imdb": {
+      "id": "tt8983180",
+      "rating": "6.2",
+      "title": "Made in China",
+      "director": "Mikhil Musale",
+      "cast": [
+        "Rajkummar Rao",
+        "Mouni Roy",
+        "Boman Irani",
+        "Paresh Rawal"
+      ],
+      "genres": "Comedy, Drama",
+      "summary": "A struggling Gujarati businessman takes an unconventional trip to China to acquire an aphrodisiac soup recipe, unleashing an unexpected retail sensation that changes his fortunes in Ahmedabad."
+    },
+    "earnvid_filecode": "8r2ot96p9573",
+    "embed_url": "https://morencius.com/embed/8r2ot96p9573",
+    "canplay": 1,
+    "primary_account": "Dev333",
+    "qualities": [
+      {
+        "quality_name": "720P WEB-DL",
+        "file_id": "8r2ot96p9573",
+        "filecode": "8r2ot96p9573",
+        "account": "Dev333",
+        "account_label": "Secondary Node (Dev333)",
+        "embed_url": "https://morencius.com/embed/8r2ot96p9573",
+        "mirrors": [
+          {
+            "provider": "EarnVids Fast Direct Download (Dev333)",
+            "url": "https://morencius.com/d/8r2ot96p9573"
+          },
+          {
+            "provider": "EarnVids High Speed Stream (Dev333)",
+            "url": "https://morencius.com/file/8r2ot96p9573"
           }
         ]
       }
