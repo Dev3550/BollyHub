@@ -3,8 +3,9 @@
 BollyHub Telegram Cloud Movie Uploader (MTProto 2GB Streaming)
 Uploads full HD movies directly to Telegram channels with native video streaming support,
 dynamic IMDb movie posters, ratings, cast, summaries, and zero user data/PC usage via GitHub Actions.
-Connected to BollyFlix 7,500+ Categorized Movies Database with Auto-Retry and Hourly Auto-Pilot.
-Strictly filters Hollywood movies for Dual Audio (Hindi + English) so only Hindi content is posted!
+Connected to BollyFlix 7,500+ Categorized Movies Database with Auto-Retry and 10-Minute Auto-Pilot.
+STRICT FILTER: Excludes any movie already on the website, strictly picks Latest 2024-2026 Blockbusters,
+and strictly filters Hollywood for Dual Audio (Hindi + English) only!
 """
 
 import os
@@ -93,6 +94,15 @@ def save_skipped(slug):
     with open(SKIPPED_FILE, "w", encoding="utf-8") as f:
         json.dump(list(skipped), f, indent=2)
 
+def parse_year_num(raw_title, year_val=""):
+    y_str = str(year_val or "").strip()
+    if y_str.isdigit() and len(y_str) == 4:
+        return int(y_str)
+    m = re.search(r'\b(20\d\d|19\d\d)\b', raw_title or "")
+    if m:
+        return int(m.group(1))
+    return 1900
+
 def get_imdb_meta(clean_title, year=""):
     """
     Dynamically fetches real IMDb poster, rating, cast, director,
@@ -137,20 +147,23 @@ def get_imdb_meta(clean_title, year=""):
 def load_all_categorized_movies():
     """
     Loads all movies from bollyflix_categorized_download_links.json.
-    Strictly filters Hollywood for Dual Audio / Hindi content only!
-    Categorized into Bollywood, South Hindi Dubbed, and Hollywood Dual Audio.
-    Enriched with website movies.json metadata (IMDb, poster) where available.
+    1. EXCLUDES movies already on the website (movies.json).
+    2. STRICTLY filters Hollywood for Dual Audio / Hindi content only!
+    3. SORTS all categories by year descending (2026, 2025, 2024 newest first!).
     """
+    website_slugs = set()
     enrich_map = {}
     if MOVIES_FILE.exists():
         try:
             with open(MOVIES_FILE, "r", encoding="utf-8") as f:
                 for m in json.load(f):
-                    s = m.get("slug", "")
+                    s = m.get("slug") or m.get("id") or ""
                     if s:
+                        website_slugs.add(s)
                         enrich_map[s] = m
                     t = m.get("title", "").lower()
                     if t:
+                        website_slugs.add(t)
                         enrich_map[t] = m
         except Exception:
             pass
@@ -179,6 +192,10 @@ def load_all_categorized_movies():
                 if movie_id in seen_slugs:
                     continue
 
+                # STRICT RULE: Skip if already on the website!
+                if movie_id in website_slugs:
+                    continue
+
                 raw_title = item.get("title", "")
 
                 # STRICT FILTER: For Hollywood movies, ensure it has Hindi Audio (Dual Audio / Multi Audio)
@@ -189,7 +206,9 @@ def load_all_categorized_movies():
 
                 seen_slugs.add(movie_id)
 
-                year = item.get("year", "")
+                year_str = item.get("year", "")
+                year_num = parse_year_num(raw_title, year_str)
+
                 clean_title = re.sub(r'^Download\s+', '', raw_title, flags=re.IGNORECASE)
                 clean_title = re.split(r'\s+(?:480p|720p|1080p|2160p|WEB-DL|HDRip|BluRay|HDTC|Pre-DVDRip|Full Movie)', clean_title, flags=re.IGNORECASE)[0].strip()
 
@@ -198,7 +217,8 @@ def load_all_categorized_movies():
                 movie_obj = {
                     "slug": movie_id,
                     "title": clean_title,
-                    "year": year or enriched.get("release_year") or "2024",
+                    "year": str(year_num) if year_num > 1900 else (enriched.get("release_year") or "2024"),
+                    "year_num": year_num,
                     "category": matched_cat,
                     "qualityName": item.get("qualityName", "720p HD"),
                     "fastdlUrl": fastdl,
@@ -208,24 +228,9 @@ def load_all_categorized_movies():
                 }
                 categories[matched_cat].append(movie_obj)
 
-    # Fallback to movies.json if links file is missing or empty
-    if not any(categories.values()) and MOVIES_FILE.exists():
-        with open(MOVIES_FILE, "r", encoding="utf-8") as f:
-            raw_movies = json.load(f)
-            for m in raw_movies:
-                slug = m.get("slug") or m.get("id")
-                if slug in seen_slugs:
-                    continue
-                seen_slugs.add(slug)
-                cats = " ".join(m.get("categories", [])).upper()
-                if "SOUTH" in cats:
-                    cat = "South Hindi Dubbed"
-                elif "HOLLYWOOD" in cats:
-                    cat = "Hollywood"
-                else:
-                    cat = "Bollywood"
-                m["category"] = cat
-                categories[cat].append(m)
+    # Sort each category: LATEST RELEASES FIRST (2026 -> 2025 -> 2024...)
+    for cat in categories:
+        categories[cat].sort(key=lambda m: m["year_num"], reverse=True)
 
     return categories
 
@@ -487,14 +492,17 @@ async def main():
     except ValueError:
         pass
 
-    # Load 100% Hindi/Dual-Audio BollyFlix Categorized Movies
+    # Load 100% Latest Hindi/Dual-Audio BollyFlix Categorized Movies (Excluding website movies)
     categorized_movies = load_all_categorized_movies()
     bolly_all = categorized_movies.get("Bollywood", [])
     south_all = categorized_movies.get("South Hindi Dubbed", [])
     holly_all = categorized_movies.get("Hollywood", [])
 
     total_pool = len(bolly_all) + len(south_all) + len(holly_all)
-    print(f"📚 Total Hindi HD Movies in Catalog Pool: {total_pool} (Bollywood: {len(bolly_all)}, South: {len(south_all)}, Hollywood Dual Audio: {len(holly_all)})")
+    print(f"📚 Total Fresh Latest HD Movies in Catalog Pool: {total_pool}")
+    print(f"   • Bollywood (2024-2026): {len(bolly_all)}")
+    print(f"   • South Hindi Dubbed (2024-2026): {len(south_all)}")
+    print(f"   • Hollywood Dual Audio (2024-2026): {len(holly_all)}")
 
     posted = load_posted()
     skipped = load_skipped()
@@ -505,7 +513,7 @@ async def main():
     south_candidates = [m for m in south_all if m["slug"] not in posted and m["slug"] not in skipped]
     holly_candidates = [m for m in holly_all if m["slug"] not in posted and m["slug"] not in skipped]
 
-    # Generate Candidate Sequence
+    # Generate Candidate Sequence (Prioritizing newest releases)
     candidate_pool = []
     if args.slug:
         all_movies = bolly_all + south_all + holly_all
@@ -516,7 +524,7 @@ async def main():
             if i < len(bolly_candidates): candidate_pool.append(bolly_candidates[i])
             if i < len(south_candidates): candidate_pool.append(south_candidates[i])
             if i < len(holly_candidates): candidate_pool.append(holly_candidates[i])
-    else: # Default: Auto-balanced round-robin across all categories!
+    else: # Default: Auto-balanced round-robin across latest categories!
         queues = [bolly_candidates, south_candidates, holly_candidates]
         q_idx = 0
         while any(queues) and len(candidate_pool) < 50:
@@ -559,10 +567,11 @@ async def main():
         attempt_count += 1
         slug = movie.get("slug")
         title = movie.get("title")
+        year = movie.get("year")
         category = movie.get("category")
         fastdl_url = movie.get("fastdlUrl") or movie.get("fastdlPagesUrl")
 
-        print(f"\n[Attempt {attempt_count} | Goal: {successful_uploads}/{args.limit}] [{category}] {title} ({slug})")
+        print(f"\n[Attempt {attempt_count} | Goal: {successful_uploads}/{args.limit}] [{category} - {year}] {title} ({slug})")
 
         if not fastdl_url:
             print(f"  ⚠️ No FastDL URL found, marking skipped.")

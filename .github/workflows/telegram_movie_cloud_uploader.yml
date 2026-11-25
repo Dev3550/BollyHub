@@ -2,8 +2,8 @@ name: Telegram Cloud Movie Uploader (0% User Net / 0% PC)
 
 on:
   schedule:
-    # 100% Automated Auto-Pilot (runs every 1 hour automatically across all categories)
-    - cron: '0 * * * *'
+    # 100% Automated Auto-Pilot (runs every 10 minutes automatically across all categories)
+    - cron: '*/10 * * * *'
 
   workflow_dispatch:
     inputs:
