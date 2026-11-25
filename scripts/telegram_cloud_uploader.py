@@ -516,8 +516,35 @@ async def main():
     # Generate Candidate Sequence (Prioritizing newest releases)
     candidate_pool = []
     if args.slug:
+        raw_input = args.slug.strip()
         all_movies = bolly_all + south_all + holly_all
-        candidate_pool = [m for m in all_movies if m.get("slug") == args.slug or args.slug.lower() in m.get("title", "").lower()]
+
+        # 1. Direct Download Link provided (FastDL / GDFlix)
+        if raw_input.startswith("http") and any(d in raw_input for d in ["dl.fastdlserver.site", "instadl.rest", "gdflix"]):
+            candidate_pool = [{
+                "slug": f"custom-url-{int(time.time())}",
+                "title": "Custom Movie Release",
+                "year": "2024",
+                "year_num": 2024,
+                "category": "Bollywood",
+                "qualityName": "720p HD",
+                "fastdlUrl": raw_input,
+                "fastdlPagesUrl": raw_input,
+                "poster_url": None,
+                "imdb": {}
+            }]
+        elif raw_input.startswith("http"):
+            # 2. BollyFlix Page URL provided -> Extract slug from URL!
+            slug_part = raw_input.rstrip("/").split("/")[-1].replace("download-", "").replace("-download", "").lower()
+            candidate_pool = [m for m in all_movies if slug_part in m.get("slug", "").lower() or m.get("slug", "").lower() in slug_part or slug_part in m.get("title", "").lower()]
+            if not candidate_pool:
+                # Fuzzy fallback matching on keywords
+                tokens = [t for t in slug_part.split("-") if len(t) > 3 and not t.isdigit()]
+                candidate_pool = [m for m in all_movies if any(t in m.get("slug", "").lower() for t in tokens)]
+        else:
+            # 3. Movie Slug or Name provided (e.g. war-2019, 3 idiots, animal)
+            query = raw_input.lower()
+            candidate_pool = [m for m in all_movies if query in m.get("slug", "").lower() or query in m.get("title", "").lower()]
     elif args.latest:
         max_len = max(len(bolly_candidates), len(south_candidates), len(holly_candidates), 1)
         for i in range(max_len):

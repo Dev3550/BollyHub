@@ -18,7 +18,7 @@ on:
           - 'all'
           - 'slug'
       movie_slug:
-        description: 'Specific Movie Slug (Only if mode is slug)'
+        description: 'Movie Name, Slug, or BollyFlix URL (e.g. war-2019, 3 idiots, https://bollyflix...)'
         required: false
         default: ''
       limit:
