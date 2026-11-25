@@ -1,5 +1,57 @@
 [
   {
+    "id": "section-375-2019",
+    "title": "Section 375 (2019)",
+    "slug": "section-375-2019",
+    "categories": [
+      "BOLLYWOOD",
+      "CRIME",
+      "DRAMA"
+    ],
+    "release_year": "2019",
+    "poster_url": "https://images.metahub.space/poster/medium/tt8144834/img.jpg",
+    "backdrop_url": "https://images.metahub.space/background/medium/tt8144834/img",
+    "imdb": {
+      "id": "tt8144834",
+      "rating": "8.1",
+      "title": "Section 375",
+      "director": "Ajay Bahl",
+      "cast": [
+        "Akshaye Khanna",
+        "Richa Chadha",
+        "Rahul Bhat",
+        "Meera Chopra"
+      ],
+      "genres": "Crime, Drama, Thriller",
+      "summary": "A celebrated Bollywood director is accused of rape by a female costume designer. A prominent defense lawyer and an idealistic public prosecutor clash in a gripping courtroom battle of evidence and consent."
+    },
+    "earnvid_filecode": "cakwxk2pd8r8",
+    "embed_url": "https://morencius.com/embed/cakwxk2pd8r8",
+    "canplay": 0,
+    "primary_account": "dev3550",
+    "qualities": [
+      {
+        "quality_name": "720P WEB-DL",
+        "file_id": "cakwxk2pd8r8",
+        "filecode": "cakwxk2pd8r8",
+        "account": "dev3550",
+        "account_label": "Primary Node (dev3550)",
+        "embed_url": "https://morencius.com/embed/cakwxk2pd8r8",
+        "mirrors": [
+          {
+            "provider": "EarnVids Fast Direct Download (dev3550)",
+            "url": "https://morencius.com/d/cakwxk2pd8r8"
+          },
+          {
+            "provider": "EarnVids High Speed Stream (dev3550)",
+            "url": "https://morencius.com/file/cakwxk2pd8r8"
+          }
+        ]
+      }
+    ],
+    "screenshots": []
+  },
+  {
     "id": "kama-sutra-a-tale-of-love-1996",
     "title": "Kama Sutra: A Tale of Love (1996)",
     "slug": "kama-sutra-a-tale-of-love-1996",

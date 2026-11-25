@@ -80,7 +80,7 @@ async function uploadMovie(item, index, total) {
 
   const tempFile = path.join(__dirname, `temp_upload_${Date.now()}.mp4`);
   console.log(`Step 2: Downloading video to local buffer...`);
-  const dlRes = await fetch(directUrl, { headers: browserHeaders });
+  const dlRes = await fetch(directUrl);
   if (!dlRes.ok) {
     console.error(`  ❌ CDN error: ${dlRes.status}`);
     return null;

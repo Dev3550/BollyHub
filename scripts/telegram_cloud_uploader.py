@@ -22,9 +22,22 @@ try:
 except ImportError:
     print("Telethon not installed. Run: pip install telethon cryptg")
 
+# Load .env file if present
+env_file = Path(__file__).resolve().parent.parent / ".env"
+if env_file.exists():
+    with open(env_file, "r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith("#") and "=" in line:
+                k, v = line.split("=", 1)
+                k = k.strip()
+                v = v.strip().strip('"').strip("'")
+                if k not in os.environ:
+                    os.environ[k] = v
+
 # Configuration from Environment Variables
-API_ID = os.environ.get("TELEGRAM_API_ID")
-API_HASH = os.environ.get("TELEGRAM_API_HASH")
+API_ID = os.environ.get("TELEGRAM_API_ID") or "37457570"
+API_HASH = os.environ.get("TELEGRAM_API_HASH") or "fcd9e2be074ba2e591fbf663f4cec898"
 BOT_TOKEN = os.environ.get("BOLLYHUB_TELEGRAM_BOT_TOKEN") or os.environ.get("TELEGRAM_BOT_TOKEN") or "9096712179:AAF2t72UJJQUnW5P12MxDphEHFfWFJd1SV4"
 CHAT_ID = os.environ.get("BOLLYHUB_TELEGRAM_CHAT_ID") or os.environ.get("TELEGRAM_CHAT_ID")
 CHANNEL_LINK = os.environ.get("BOLLYHUB_TELEGRAM_CHANNEL") or "https://t.me/+mu3upENk3GFmZTFl"
@@ -82,8 +95,12 @@ def resolve_direct_link(start_url):
                 dl_res = requests.get(found_link, headers={**BROWSER_HEADERS, "Referer": curr}, allow_redirects=False, timeout=15)
                 dl_loc = dl_res.headers.get("Location")
                 if dl_loc:
-                    if "googleusercontent.com" in dl_loc:
-                        return dl_loc
+                    if "url=" in dl_loc:
+                        import urllib.parse
+                        parsed = urllib.parse.urlparse(dl_loc)
+                        params = urllib.parse.parse_qs(parsed.query)
+                        if "url" in params and params["url"]:
+                            return params["url"][0]
                     return dl_loc
                 return None
         except Exception as e:
@@ -94,7 +111,8 @@ def resolve_direct_link(start_url):
 def download_file(url, target_path):
     """High-speed stream download with progress reporting."""
     print(f"⬇️ Downloading to {target_path.name}...")
-    with requests.get(url, stream=True, headers=BROWSER_HEADERS, timeout=60) as r:
+    headers = {} if "googleusercontent.com" in url else BROWSER_HEADERS
+    with requests.get(url, stream=True, headers=headers, timeout=60) as r:
         r.raise_for_status()
         total_size = int(r.headers.get("content-length", 0))
         downloaded = 0
