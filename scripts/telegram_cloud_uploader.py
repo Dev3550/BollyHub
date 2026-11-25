@@ -3,6 +3,7 @@
 BollyHub Telegram Cloud Movie Uploader (MTProto 2GB Streaming)
 Uploads full HD movies directly to Telegram channels with native video streaming support,
 thumbnails, progress reporting, and zero user data/PC usage via GitHub Actions Cloud Runner.
+Connected to BollyFlix 7,500+ Categorized Movies Database with Hourly Auto-Pilot.
 """
 
 import os
@@ -48,10 +49,14 @@ DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 MOVIES_FILE = DATA_DIR / "movies.json"
 LINKS_FILE = DATA_DIR / "bollyflix_categorized_download_links.json"
 POSTED_FILE = DATA_DIR / "telegram_cloud_uploaded.json"
+DEFAULT_THUMB = DATA_DIR / "default_thumb.jpg"
 
 BROWSER_HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+    "Accept": "*/*",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Accept-Encoding": "identity",
+    "Connection": "keep-alive"
 }
 
 def load_posted():
@@ -69,6 +74,92 @@ def save_posted(slug):
     POSTED_FILE.parent.mkdir(parents=True, exist_ok=True)
     with open(POSTED_FILE, "w", encoding="utf-8") as f:
         json.dump(list(posted), f, indent=2)
+
+def load_all_categorized_movies():
+    """
+    Loads all 7,554 720p movies from bollyflix_categorized_download_links.json.
+    Categorized into Bollywood, South Hindi Dubbed, and Hollywood.
+    Enriched with website movies.json metadata (IMDb, poster) where available.
+    """
+    enrich_map = {}
+    if MOVIES_FILE.exists():
+        try:
+            with open(MOVIES_FILE, "r", encoding="utf-8") as f:
+                for m in json.load(f):
+                    s = m.get("slug", "")
+                    if s:
+                        enrich_map[s] = m
+                    t = m.get("title", "").lower()
+                    if t:
+                        enrich_map[t] = m
+        except Exception:
+            pass
+
+    categories = {"Bollywood": [], "South Hindi Dubbed": [], "Hollywood": []}
+    seen_slugs = set()
+
+    if LINKS_FILE.exists():
+        with open(LINKS_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        for cat_name, cat_data in data.items():
+            matched_cat = "Bollywood"
+            if "south" in cat_name.lower():
+                matched_cat = "South Hindi Dubbed"
+            elif "hollywood" in cat_name.lower():
+                matched_cat = "Hollywood"
+
+            q720 = cat_data.get("qualities", {}).get("720p", [])
+            for item in q720:
+                movie_id = item.get("movieId")
+                fastdl = item.get("fastdlUrl")
+                if not movie_id or not fastdl:
+                    continue
+
+                if movie_id in seen_slugs:
+                    continue
+                seen_slugs.add(movie_id)
+
+                raw_title = item.get("title", "")
+                year = item.get("year", "")
+                clean_title = re.sub(r'^Download\s+', '', raw_title, flags=re.IGNORECASE)
+                clean_title = re.split(r'\s+(?:480p|720p|1080p|2160p|WEB-DL|HDRip|BluRay|HDTC|Pre-DVDRip|Full Movie)', clean_title, flags=re.IGNORECASE)[0].strip()
+
+                enriched = enrich_map.get(movie_id) or enrich_map.get(clean_title.lower()) or {}
+
+                movie_obj = {
+                    "slug": movie_id,
+                    "title": clean_title,
+                    "year": year or enriched.get("release_year") or "2024",
+                    "category": matched_cat,
+                    "qualityName": item.get("qualityName", "720p HD"),
+                    "fastdlUrl": fastdl,
+                    "fastdlPagesUrl": item.get("fastdlPagesUrl"),
+                    "poster_url": enriched.get("poster_url"),
+                    "imdb": enriched.get("imdb", {})
+                }
+                categories[matched_cat].append(movie_obj)
+
+    # Fallback to movies.json if links file is missing or empty
+    if not any(categories.values()) and MOVIES_FILE.exists():
+        with open(MOVIES_FILE, "r", encoding="utf-8") as f:
+            raw_movies = json.load(f)
+            for m in raw_movies:
+                slug = m.get("slug") or m.get("id")
+                if slug in seen_slugs:
+                    continue
+                seen_slugs.add(slug)
+                cats = " ".join(m.get("categories", [])).upper()
+                if "SOUTH" in cats:
+                    cat = "South Hindi Dubbed"
+                elif "HOLLYWOOD" in cats:
+                    cat = "Hollywood"
+                else:
+                    cat = "Bollywood"
+                m["category"] = cat
+                categories[cat].append(m)
+
+    return categories
 
 def resolve_direct_link(start_url):
     """Follows fastdl / instadl redirects to get direct Google CDN download link."""
@@ -89,7 +180,6 @@ def resolve_direct_link(start_url):
                 html = res.text
                 match = re.search(r'href=[\'"]([^\'"]*(?:Instant DL|instadl\.rest)[^\'"]*)[\'"]', html, re.IGNORECASE)
                 if not match:
-                    # Search any instadl.rest link
                     match = re.search(r'href=[\'"](https?://[^\'"]*instadl\.rest[^\'"]*)[\'"]', html)
                 if not match:
                     return None
@@ -111,12 +201,21 @@ def resolve_direct_link(start_url):
     return None
 
 def download_file(url, target_path):
-    """High-speed stream download with progress reporting."""
+    """
+    High-speed stream download with progress reporting and 1950MB safety limit.
+    ALWAYS passes BROWSER_HEADERS to prevent Google CDN 400 Bad Request error.
+    """
     print(f"⬇️ Downloading to {target_path.name}...")
-    headers = {} if "googleusercontent.com" in url else BROWSER_HEADERS
-    with requests.get(url, stream=True, headers=headers, timeout=60) as r:
+    with requests.get(url, stream=True, headers=BROWSER_HEADERS, timeout=60) as r:
         r.raise_for_status()
         total_size = int(r.headers.get("content-length", 0))
+
+        # Telegram bot MTProto limit is 2000 MB (4000 parts of 512KB)
+        MAX_SAFE_BYTES = 1950 * 1024 * 1024
+        if total_size > MAX_SAFE_BYTES:
+            print(f"  ⚠️ Video size ({total_size / (1024*1024):.1f} MB) exceeds Telegram Bot MTProto limit (1950 MB). Skipping to prevent crash.")
+            return False
+
         downloaded = 0
         last_pct = 0
         with open(target_path, "wb") as f:
@@ -129,13 +228,15 @@ def download_file(url, target_path):
                         if pct >= last_pct + 20:
                             print(f"  ⬇️ Downloaded: {pct}% ({downloaded / (1024*1024):.1f} MB / {total_size / (1024*1024):.1f} MB)")
                             last_pct = pct
-    print(f"  ✅ Download complete: {target_path.stat().st_size / (1024*1024):.1f} MB")
+
+    file_size_mb = target_path.stat().st_size / (1024 * 1024)
+    print(f"  ✅ Download complete: {file_size_mb:.1f} MB")
     return True
 
 def download_thumbnail(poster_url, target_path):
     """Downloads poster as JPG thumbnail for video player preview."""
     try:
-        r = requests.get(poster_url, timeout=10)
+        r = requests.get(poster_url, headers=BROWSER_HEADERS, timeout=10)
         if r.status_code == 200:
             with open(target_path, "wb") as f:
                 f.write(r.content)
@@ -146,26 +247,41 @@ def download_thumbnail(poster_url, target_path):
 
 def format_caption(movie):
     title = movie.get("title", "Movie")
-    year = movie.get("release_year", "2024")
-    rating = movie.get("imdb", {}).get("rating", "8.0")
-    genres = movie.get("imdb", {}).get("genres", "Action, Drama")
-    summary = movie.get("imdb", {}).get("summary", "Watch in Full HD online on BollyHub.")
-    cast = ", ".join(movie.get("imdb", {}).get("cast", [])[:4]) or "Ensemble Cast"
-    director = movie.get("imdb", {}).get("director", "Top Director")
+    year = movie.get("year") or movie.get("release_year", "2024")
+    category = movie.get("category", "Bollywood")
+    rating = movie.get("imdb", {}).get("rating") or "7.8"
+    genres = movie.get("imdb", {}).get("genres") or f"{category}, Action, Drama"
+    summary = movie.get("imdb", {}).get("summary") or f"Watch {title} in Full HD online with zero buffering on BollyHub."
+    cast = ", ".join(movie.get("imdb", {}).get("cast", [])[:4]) if movie.get("imdb", {}).get("cast") else ""
+    director = movie.get("imdb", {}).get("director")
+
+    if "South" in category:
+        audio_lang = "Hindi Dubbed [Dual Audio HQ]"
+    elif "Hollywood" in category:
+        audio_lang = "Hindi + English [Dual Audio 5.1]"
+    else:
+        audio_lang = "Hindi Original [Clean 5.1 DD]"
+
+    details = []
+    if cast:
+        details.append(f"👥 <b>Starring:</b> <i>{cast}</i>")
+    if director:
+        details.append(f"🎬 <b>Director:</b> <i>{director}</i>")
+
+    details_str = ("\n" + "\n".join(details)) if details else ""
 
     caption = (
         f"👑 <b>BOLLYHUB™ OFFICIAL RELEASE</b> 👑\n"
         f"━━━━━━━━━━━━━━━━━━━━━\n"
         f"🎬 <b>{title.upper()}</b> ({year})\n"
         f"⭐️ <b>IMDb:</b> ★ <b>{rating} / 10</b>\n\n"
-        f"🔊 <b>Audio:</b> <code>Hindi Original [Clean 5.1 DD]</code>\n"
+        f"🔊 <b>Audio:</b> <code>{audio_lang}</code>\n"
         f"💿 <b>Quality:</b> <code>720p HD • Native In-Telegram Stream</code>\n"
-        f"🎭 <b>Genres:</b> <i>{genres}</i>\n"
-        f"🎬 <b>Director:</b> <i>{director}</i>\n"
-        f"👥 <b>Starring:</b> <i>{cast}</i>\n"
+        f"🎭 <b>Category:</b> <i>{category} • {genres}</i>"
+        f"{details_str}\n"
         f"━━━━━━━━━━━━━━━━━━━━━\n"
         f"📖 <b>Storyline:</b>\n"
-        f"<i>\"{summary[:240]}...\"</i>\n\n"
+        f"<i>\"{summary[:200]}...\"</i>\n\n"
         f"━━━━━━━━━━━━━━━━━━━━━\n"
         f"🍿 <b>Play directly inside Telegram with zero buffering!</b>\n"
         f"📢 <b>Official Community:</b> {CHANNEL_LINK}"
@@ -181,6 +297,11 @@ async def fast_upload_file(client, file_path, progress_callback=None, max_worker
     file_size = os.path.getsize(file_path)
     part_size = 512 * 1024  # 512KB per Telegram part
     total_parts = (file_size + part_size - 1) // part_size
+
+    # Guard against Telegram MTProto 4000-part absolute limit
+    if total_parts > 4000:
+        raise ValueError(f"File parts ({total_parts}) exceeds Telegram MTProto limit 4000. File size: {file_size / (1024*1024):.1f} MB")
+
     file_id = random.getrandbits(63)
     file_name = os.path.basename(file_path)
 
@@ -268,17 +389,16 @@ async def main():
     parser.add_argument("--latest", action="store_true", help="Upload the latest verified movie")
     parser.add_argument("--all", action="store_true", help="Upload all unposted movies sequentially")
     parser.add_argument("--chat", help="Target channel ID (e.g. -100...) or @channel_username")
-    parser.add_argument("--limit", type=int, default=2, help="Max movies to process")
+    parser.add_argument("--limit", type=int, default=1, help="Max movies to process (Default: 1)")
     args = parser.parse_args()
 
     if not API_ID or not API_HASH:
         print("❌ Error: TELEGRAM_API_ID and TELEGRAM_API_HASH are required for MTProto 2GB uploads!")
-        print("   Get them in 1 minute from https://my.telegram.org (API development tools).")
         sys.exit(1)
 
     target_chat = args.chat or CHAT_ID
     if not target_chat:
-        print("❌ Error: Target Chat ID / Channel Username is required! Set BOLLYHUB_TELEGRAM_CHAT_ID or use --chat")
+        print("❌ Error: Target Chat ID / Channel Username is required!")
         sys.exit(1)
 
     try:
@@ -287,49 +407,48 @@ async def main():
     except ValueError:
         pass
 
-    # Load Movie Catalog
-    with open(MOVIES_FILE, "r", encoding="utf-8") as f:
-        movies = json.load(f)
+    # Load 7,554 BollyFlix Categorized Movies
+    categorized_movies = load_all_categorized_movies()
+    bolly_all = categorized_movies.get("Bollywood", [])
+    south_all = categorized_movies.get("South Hindi Dubbed", [])
+    holly_all = categorized_movies.get("Hollywood", [])
 
-    # Load Scraper Links to get original high-speed FastDL links
-    fastdl_map = {}
-    if LINKS_FILE.exists():
-        with open(LINKS_FILE, "r", encoding="utf-8") as f:
-            links_data = json.load(f)
-            for cat, cdata in links_data.items():
-                for qname, qlist in cdata.get("qualities", {}).items():
-                    for item in qlist:
-                        raw_title = item.get("title", "").lower()
-                        fastdl = item.get("fastdlUrl")
-                        if fastdl:
-                            fastdl_map[raw_title] = fastdl
+    total_pool = len(bolly_all) + len(south_all) + len(holly_all)
+    print(f"📚 Total Movies in Catalog Pool: {total_pool} (Bollywood: {len(bolly_all)}, South: {len(south_all)}, Hollywood: {len(holly_all)})")
 
     posted = load_posted()
+    print(f"✅ Already uploaded to Telegram: {len(posted)} movies")
 
-    def get_main_cat(m):
-        cats = " ".join(m.get("categories", [])).upper()
-        if "SOUTH" in cats:
-            return "SOUTH"
-        elif "HOLLYWOOD" in cats:
-            return "HOLLYWOOD"
-        return "BOLLYWOOD"
+    # Filter unposted
+    bolly_unposted = [m for m in bolly_all if m["slug"] not in posted]
+    south_unposted = [m for m in south_all if m["slug"] not in posted]
+    holly_unposted = [m for m in holly_all if m["slug"] not in posted]
 
     # Determine targets
     if args.slug:
-        targets = [m for m in movies if m.get("slug") == args.slug or m.get("id") == args.slug]
-    elif args.all:
-        targets = [m for m in movies if m.get("slug") not in posted]
+        all_movies = bolly_all + south_all + holly_all
+        targets = [m for m in all_movies if m.get("slug") == args.slug or args.slug.lower() in m.get("title", "").lower()]
+        targets = targets[:1]
     elif args.latest:
-        unposted = [m for m in movies if m.get("slug") not in posted]
-        targets = unposted[:args.limit]
+        # Latest from all categories combined
+        combined = []
+        max_len = max(len(bolly_unposted), len(south_unposted), len(holly_unposted), 1)
+        for i in range(max_len):
+            if i < len(bolly_unposted): combined.append(bolly_unposted[i])
+            if i < len(south_unposted): combined.append(south_unposted[i])
+            if i < len(holly_unposted): combined.append(holly_unposted[i])
+        targets = combined[:args.limit]
+    elif args.all:
+        combined = []
+        max_len = max(len(bolly_unposted), len(south_unposted), len(holly_unposted), 1)
+        for i in range(max_len):
+            if i < len(bolly_unposted): combined.append(bolly_unposted[i])
+            if i < len(south_unposted): combined.append(south_unposted[i])
+            if i < len(holly_unposted): combined.append(holly_unposted[i])
+        targets = combined
     else: # Default: Auto-balanced round-robin across all categories!
-        unposted = [m for m in movies if m.get("slug") not in posted]
-        bolly = [m for m in unposted if get_main_cat(m) == "BOLLYWOOD"]
-        south = [m for m in unposted if get_main_cat(m) == "SOUTH"]
-        holly = [m for m in unposted if get_main_cat(m) == "HOLLYWOOD"]
-
         targets = []
-        queues = [bolly, south, holly]
+        queues = [bolly_unposted, south_unposted, holly_unposted]
         q_idx = 0
         while len(targets) < args.limit and any(queues):
             q = queues[q_idx % len(queues)]
@@ -338,12 +457,14 @@ async def main():
             q_idx += 1
 
     if not targets:
-        print("🎉 No pending movies to upload to Telegram!")
+        print("🎉 All movies in catalog are already uploaded to Telegram!")
         return
 
     print("===============================================================")
     print("🚀 BOLLYHUB TELEGRAM CLOUD MOVIE UPLOADER (MTPROTO 2GB)")
     print(f"🎬 Movies queued: {len(targets)}")
+    for t in targets:
+        print(f"   • [{t.get('category')}] {t.get('title')} ({t.get('year')})")
     print(f"📌 Target Channel: {target_chat}")
     print("===============================================================")
 
@@ -360,30 +481,18 @@ async def main():
     for idx, movie in enumerate(targets, 1):
         slug = movie.get("slug")
         title = movie.get("title")
+        fastdl_url = movie.get("fastdlUrl") or movie.get("fastdlPagesUrl")
         print(f"\n[{idx}/{len(targets)}] Processing: {title} ({slug})")
-
-        # 1. Find direct FastDL URL
-        fastdl_url = None
-        for raw_title, furl in fastdl_map.items():
-            clean_search = re.sub(r'[^a-zA-Z0-9\s]', '', slug.replace('-', ' ')).lower()
-            if any(part in raw_title for part in clean_search.split()[:3]):
-                fastdl_url = furl
-                break
-
-        if not fastdl_url and movie.get("qualities"):
-            # Fallback to EarnVids download mirror if available
-            for q in movie["qualities"]:
-                for m in q.get("mirrors", []):
-                    if "d/" in m.get("url", ""):
-                        fastdl_url = m["url"]
-                        break
 
         if not fastdl_url:
             print(f"  ⚠️ No download source found for {title}, skipping.")
             continue
 
-        # 2. Resolve Google CDN direct URL
+        # Resolve Google CDN direct URL
         direct_url = resolve_direct_link(fastdl_url)
+        if not direct_url and movie.get("fastdlPagesUrl") and movie["fastdlPagesUrl"] != fastdl_url:
+            direct_url = resolve_direct_link(movie["fastdlPagesUrl"])
+
         if not direct_url:
             print(f"  ❌ Could not resolve CDN direct link for {title}, skipping.")
             continue
@@ -392,19 +501,24 @@ async def main():
         temp_thumb = work_dir / f"{slug}_thumb.jpg"
 
         try:
-            # 3. Download Thumbnail
+            # 1. Prepare Thumbnail (Custom Poster or Official 3D Logo)
             thumb_path = None
             if movie.get("poster_url"):
                 thumb_path = download_thumbnail(movie["poster_url"], temp_thumb)
+            if not thumb_path and DEFAULT_THUMB.exists():
+                thumb_path = str(DEFAULT_THUMB)
 
-            # 4. Download Video (15-25 seconds on Cloud 1Gbps)
-            download_file(direct_url, temp_video)
+            # 2. Download Video (15-25 seconds on Cloud 1Gbps)
+            download_success = download_file(direct_url, temp_video)
+            if not download_success:
+                print(f"  ⚠️ Skipping {title} due to download guard.")
+                continue
 
-            # 5. Upload Video directly to Telegram via MTProto with streaming attribute
+            # 3. Upload Video directly to Telegram via MTProto with streaming attribute
             msg_id = await upload_movie_to_telegram(client, target_chat, movie, temp_video, thumb_path)
             if msg_id:
                 save_posted(slug)
-                print(f"  ⭐ Successfully stored {title} in Telegram Channel!")
+                print(f"  ⭐ Successfully posted {title} to Telegram Channel!")
         except Exception as e:
             print(f"  ❌ Error processing {title}: {e}")
         finally:

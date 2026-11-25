@@ -2,8 +2,8 @@ name: Telegram Cloud Movie Uploader (0% User Net / 0% PC)
 
 on:
   schedule:
-    # 100% Automated Auto-Pilot (runs every 6 hours automatically across all categories)
-    - cron: '0 */6 * * *'
+    # 100% Automated Auto-Pilot (runs every 1 hour automatically across all categories)
+    - cron: '0 * * * *'
 
   workflow_dispatch:
     inputs:
@@ -22,9 +22,9 @@ on:
         required: false
         default: ''
       limit:
-        description: 'Number of movies to upload (Default: 2)'
+        description: 'Number of movies to upload (Default: 1)'
         required: false
-        default: '2'
+        default: '1'
 
 jobs:
   cloud-upload-to-telegram:
@@ -49,7 +49,7 @@ jobs:
         run: |
           MODE="${{ github.event.inputs.mode || 'auto' }}"
           SLUG="${{ github.event.inputs.movie_slug }}"
-          LIMIT="${{ github.event.inputs.limit || '2' }}"
+          LIMIT="${{ github.event.inputs.limit || '1' }}"
           
           if [ "$MODE" = "slug" ] && [ -n "$SLUG" ]; then
             python scripts/telegram_cloud_uploader.py --slug "$SLUG"
