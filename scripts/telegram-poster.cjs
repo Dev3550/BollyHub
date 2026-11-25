@@ -103,8 +103,8 @@ async function sendTelegramPost(movie, targetChatId = CHAT_ID) {
     inline_keyboard: [
       [
         {
-          text: '▶️ 🍿 Watch in Telegram Player',
-          web_app: { url: watchUrl }
+          text: '▶️ 🍿 Watch Online (In-App Player)',
+          url: watchUrl
         }
       ],
       [
