@@ -1,14 +1,19 @@
 name: Telegram Cloud Movie Uploader (0% User Net / 0% PC)
 
 on:
+  schedule:
+    # 100% Automated Auto-Pilot (runs every 6 hours automatically across all categories)
+    - cron: '0 */6 * * *'
+
   workflow_dispatch:
     inputs:
       mode:
-        description: 'Upload Mode'
+        description: 'Upload Mode (auto = balanced across categories)'
         required: true
-        default: 'latest'
+        default: 'auto'
         type: choice
         options:
+          - 'auto'
           - 'latest'
           - 'all'
           - 'slug'
@@ -20,10 +25,6 @@ on:
         description: 'Number of movies to upload (Default: 2)'
         required: false
         default: '2'
-
-  # Uncomment below if you want automated scheduled uploads (e.g. every 6 hours)
-  # schedule:
-  #   - cron: '0 */6 * * *'
 
 jobs:
   cloud-upload-to-telegram:
@@ -46,16 +47,18 @@ jobs:
 
       - name: Run Telegram Cloud Movie Uploader
         run: |
-          MODE="${{ github.event.inputs.mode || 'latest' }}"
+          MODE="${{ github.event.inputs.mode || 'auto' }}"
           SLUG="${{ github.event.inputs.movie_slug }}"
-          LIMIT="${{ github.event.inputs.limit || '3' }}"
+          LIMIT="${{ github.event.inputs.limit || '2' }}"
           
           if [ "$MODE" = "slug" ] && [ -n "$SLUG" ]; then
             python scripts/telegram_cloud_uploader.py --slug "$SLUG"
           elif [ "$MODE" = "all" ]; then
             python scripts/telegram_cloud_uploader.py --all
-          else
+          elif [ "$MODE" = "latest" ]; then
             python scripts/telegram_cloud_uploader.py --latest --limit "$LIMIT"
+          else
+            python scripts/telegram_cloud_uploader.py --auto --limit "$LIMIT"
           fi
         env:
           TELEGRAM_API_ID: ${{ secrets.TELEGRAM_API_ID || '37457570' }}

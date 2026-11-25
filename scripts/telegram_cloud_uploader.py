@@ -264,10 +264,11 @@ async def upload_movie_to_telegram(client, chat_target, movie, video_path, thumb
 async def main():
     parser = argparse.ArgumentParser(description="BollyHub Telegram Cloud Movie Uploader")
     parser.add_argument("--slug", help="Movie slug to upload")
+    parser.add_argument("--auto", action="store_true", help="Auto-rotate balanced across all categories (Bollywood, South, Hollywood)")
     parser.add_argument("--latest", action="store_true", help="Upload the latest verified movie")
     parser.add_argument("--all", action="store_true", help="Upload all unposted movies sequentially")
     parser.add_argument("--chat", help="Target channel ID (e.g. -100...) or @channel_username")
-    parser.add_argument("--limit", type=int, default=3, help="Max movies to process")
+    parser.add_argument("--limit", type=int, default=2, help="Max movies to process")
     args = parser.parse_args()
 
     if not API_ID or not API_HASH:
@@ -305,17 +306,36 @@ async def main():
 
     posted = load_posted()
 
+    def get_main_cat(m):
+        cats = " ".join(m.get("categories", [])).upper()
+        if "SOUTH" in cats:
+            return "SOUTH"
+        elif "HOLLYWOOD" in cats:
+            return "HOLLYWOOD"
+        return "BOLLYWOOD"
+
     # Determine targets
     if args.slug:
         targets = [m for m in movies if m.get("slug") == args.slug or m.get("id") == args.slug]
+    elif args.all:
+        targets = [m for m in movies if m.get("slug") not in posted]
     elif args.latest:
         unposted = [m for m in movies if m.get("slug") not in posted]
         targets = unposted[:args.limit]
-    elif args.all:
-        targets = [m for m in movies if m.get("slug") not in posted]
-    else:
+    else: # Default: Auto-balanced round-robin across all categories!
         unposted = [m for m in movies if m.get("slug") not in posted]
-        targets = unposted[:args.limit]
+        bolly = [m for m in unposted if get_main_cat(m) == "BOLLYWOOD"]
+        south = [m for m in unposted if get_main_cat(m) == "SOUTH"]
+        holly = [m for m in unposted if get_main_cat(m) == "HOLLYWOOD"]
+
+        targets = []
+        queues = [bolly, south, holly]
+        q_idx = 0
+        while len(targets) < args.limit and any(queues):
+            q = queues[q_idx % len(queues)]
+            if q:
+                targets.append(q.pop(0))
+            q_idx += 1
 
     if not targets:
         print("🎉 No pending movies to upload to Telegram!")
