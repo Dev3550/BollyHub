@@ -258,18 +258,25 @@ def extract_from_bollyflix_html(html, page_url):
                 })
                 break
                 
-    chosen = None
-    for pref in ["720p", "480p", "1080p"]:
-        for q in qualities:
-            if pref in q["quality"].lower():
-                chosen = q
+    # STRICT 720p PRIORITY:
+    # Always prefer 720p HD as primary download quality.
+    # Fallbacks will only attempt alternative 720p mirrors first before considering other resolutions.
+    q720_list = [q for q in qualities if "720p" in q["quality"].lower()]
+    if q720_list:
+        chosen = q720_list[0]
+        fallback_urls = [q["url"] for q in q720_list[1:]]
+    else:
+        chosen = None
+        for pref in ["480p", "1080p"]:
+            for q in qualities:
+                if pref in q["quality"].lower():
+                    chosen = q
+                    break
+            if chosen:
                 break
-        if chosen:
-            break
-    if not chosen and qualities:
-        chosen = qualities[0]
-        
-    fallback_urls = [q["url"] for q in qualities if chosen and q["url"] != chosen["url"]]
+        if not chosen and qualities:
+            chosen = qualities[0]
+        fallback_urls = [q["url"] for q in qualities if chosen and q["url"] != chosen["url"]]
 
     slug = page_url.rstrip("/").split("/")[-1].replace(".html", "").replace("download-", "")
     cat = "Hollywood" if any(w in raw_title.lower() for w in ["dual", "english", "hollywood"]) else ("South Hindi Dubbed" if any(w in raw_title.lower() for w in ["south", "telugu", "tamil"]) else "Bollywood")
@@ -321,18 +328,25 @@ def extract_from_bollyspice_html(html, page_url):
                 "label": a.get_text().strip()
             })
             
-    chosen = None
-    for pref in ["720p", "480p", "1080p"]:
-        for q in qualities:
-            if pref in q["quality"].lower():
-                chosen = q
+    # STRICT 720p PRIORITY:
+    # Always prefer 720p HD as primary download quality.
+    # Fallbacks will only attempt alternative 720p mirrors first before considering other resolutions.
+    q720_list = [q for q in qualities if "720p" in q["quality"].lower()]
+    if q720_list:
+        chosen = q720_list[0]
+        fallback_urls = [q["url"] for q in q720_list[1:]]
+    else:
+        chosen = None
+        for pref in ["480p", "1080p"]:
+            for q in qualities:
+                if pref in q["quality"].lower():
+                    chosen = q
+                    break
+            if chosen:
                 break
-        if chosen:
-            break
-    if not chosen and qualities:
-        chosen = qualities[0]
-        
-    fallback_urls = [q["url"] for q in qualities if chosen and q["url"] != chosen["url"]]
+        if not chosen and qualities:
+            chosen = qualities[0]
+        fallback_urls = [q["url"] for q in qualities if chosen and q["url"] != chosen["url"]]
 
     slug = page_url.rstrip("/").split("/")[-1].replace(".html", "")
     cat = "Hollywood" if any(w in raw_title.lower() for w in ["dual", "english", "hollywood"]) else ("South Hindi Dubbed" if any(w in raw_title.lower() for w in ["south", "telugu", "tamil"]) else "Bollywood")
@@ -790,7 +804,13 @@ def download_file(url, target_path):
         return False
 
 def download_thumbnail(poster_url, target_path):
-    """Downloads poster as JPG thumbnail for video player preview with WebP support."""
+    """
+    Downloads poster as JPG thumbnail for video player preview.
+    STRICT TELEGRAM MTPROTO COMPLIANCE:
+    - Normalizes ANY format (WebP, PNG, JPEG, AVIF) to standard RGB JPEG.
+    - Scales down to max 320x320 maintaining aspect ratio so Telegram never strips or drops it.
+    - Ensures file size is <= 100 KB for lightning-fast preview rendering.
+    """
     if not poster_url:
         return None
     try:
@@ -798,21 +818,17 @@ def download_thumbnail(poster_url, target_path):
         if 'bollyspice.in' in poster_url:
             headers['Referer'] = 'https://bollyspice.in/'
         r = requests.get(poster_url, headers=headers, timeout=12)
-        if r.status_code == 200 and len(r.content) > 1000:
-            content_type = r.headers.get('content-type', '').lower()
-            if 'webp' in content_type or poster_url.lower().endswith('.webp'):
-                try:
-                    from PIL import Image
-                    import io
-                    img = Image.open(io.BytesIO(r.content)).convert('RGB')
-                    img.save(str(target_path), 'JPEG', quality=95)
-                    return str(target_path)
-                except Exception as conv_err:
-                    print(f"  ⚠️ WebP conversion error: {conv_err}")
-
-            with open(target_path, "wb") as f:
-                f.write(r.content)
-            return str(target_path)
+        if r.status_code == 200 and len(r.content) > 500:
+            from PIL import Image
+            import io
+            img = Image.open(io.BytesIO(r.content)).convert('RGB')
+            # Telegram MTProto strictly requires video thumb max dimension <= 320px
+            img.thumbnail((320, 320), Image.Resampling.LANCZOS)
+            target_path = Path(target_path)
+            target_path.parent.mkdir(parents=True, exist_ok=True)
+            img.save(str(target_path), 'JPEG', quality=85, optimize=True)
+            if target_path.exists() and target_path.stat().st_size > 100:
+                return str(target_path)
     except Exception as e:
         print(f"  ⚠️ Thumbnail download failed ({poster_url[:50]}): {e}")
     return None
@@ -930,12 +946,53 @@ async def upload_movie_to_telegram(client, chat_target, movie, video_path, thumb
             print(f"  ⬆️ Uploading to Telegram (4-Worker Stream): {pct}% ({current / (1024*1024):.1f} MB / {total / (1024*1024):.1f} MB) @ {speed:.2f} MB/s")
             last_pct = pct
 
-    # Native Telegram Video Attributes (renders duration & center play button overlay)
+def get_video_metadata(file_path):
+    """Accurately extracts video duration and resolution using ffprobe if available."""
+    duration = 7200
+    w = 1280
+    h = 720
+    try:
+        import subprocess
+        cmd = ["ffprobe", "-v", "error", "-show_entries", "format=duration:stream=width,height", "-of", "json", str(file_path)]
+        res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=8)
+        if res.returncode == 0:
+            data = json.loads(res.stdout)
+            dur = data.get("format", {}).get("duration")
+            if dur:
+                duration = int(float(dur))
+            for st in data.get("streams", []):
+                if st.get("width") and st.get("height"):
+                    w = int(st["width"])
+                    h = int(st["height"])
+                    break
+    except Exception:
+        pass
+    return duration, w, h
+
+async def upload_movie_to_telegram(client, chat_target, movie, video_path, thumb_path):
+    """Uploads large video file up to 2GB via FastTelethon 4-worker parallel MTProto."""
+    print(f"\n🚀 Initiating FastTelethon 4-Worker High-Speed Upload to Telegram ({chat_target})...")
+    caption = format_caption(movie)
+
+    last_pct = 0
+    start_time = time.time()
+
+    def progress_callback(current, total):
+        nonlocal last_pct
+        pct = int((current / total) * 100)
+        if pct >= last_pct + 10:
+            elapsed = time.time() - start_time
+            speed = (current / (1024 * 1024)) / elapsed if elapsed > 0 else 0
+            print(f"  ⬆️ Uploading to Telegram (4-Worker Stream): {pct}% ({current / (1024*1024):.1f} MB / {total / (1024*1024):.1f} MB) @ {speed:.2f} MB/s")
+            last_pct = pct
+
+    # Native Telegram Video Attributes with real duration & resolution
+    vid_dur, vid_w, vid_h = get_video_metadata(video_path)
     attributes = [
         DocumentAttributeVideo(
-            duration=7200, # 2 hours default
-            w=1280,
-            h=720,
+            duration=vid_dur,
+            w=vid_w,
+            h=vid_h,
             supports_streaming=True
         )
     ]
@@ -958,32 +1015,96 @@ async def upload_movie_to_telegram(client, chat_target, movie, video_path, thumb
     print(f"   Message ID: {msg.id}")
     return msg.id
 
-def search_dailymotion_trailer(title, year):
-    """Searches Dailymotion for official HD trailer. Highly reliable on cloud runners with zero bot checks."""
-    try:
-        clean = re.sub(r'[\{\[\(].*?[\}\]\)]', '', title)
-        clean = re.split(r'\s+(?:Dual|Hindi|Audio|Movie|WEB-DL|HDRip|BluRay|HDTC|ESub)', clean, flags=re.IGNORECASE)[0].strip()
-        words = [w for w in re.split(r'[^a-zA-Z0-9]+', clean) if len(w) > 1]
-        q_str = " ".join(words[:4])
+def search_dailymotion_trailer(title, year, is_hindi=False):
+    """Searches Dailymotion for official trailer with multi-query and duration filter."""
+    clean = re.sub(r'[\{\[\(].*?[\}\]\)]', '', title)
+    clean = re.split(r'\s+(?:Dual|Hindi|Audio|Movie|WEB-DL|HDRip|BluRay|HDTC|ESub)', clean, flags=re.IGNORECASE)[0].strip()
+    words = [w for w in re.split(r'[^a-zA-Z0-9]+', clean) if len(w) > 1]
+    clean_q = " ".join(words[:4])
+
+    queries = []
+    if is_hindi:
         if year:
-            q_str += f" {year}"
-        q_str += " official trailer"
-        url = f"https://api.dailymotion.com/videos?search={urllib.parse.quote_plus(q_str)}&limit=3&fields=id,title,url"
-        r = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=10)
-        if r.status_code == 200:
-            items = r.json().get("list", [])
-            if items:
-                print(f"  🎬 Found Dailymotion official trailer: {items[0]['title']} ({items[0]['url']})")
-                return items[0]["url"]
-    except Exception as e:
-        print(f"  ⚠️ Dailymotion trailer search error: {e}")
+            queries.append(f"{clean_q} {year} hindi trailer")
+        queries.append(f"{clean_q} hindi trailer")
+        queries.append(f"{clean_q} hindi dubbed trailer")
+        queries.append(f"{clean_q} official trailer")
+    else:
+        if year:
+            queries.append(f"{clean_q} {year} official trailer")
+        queries.append(f"{clean_q} official trailer")
+        queries.append(f"{clean_q} trailer")
+
+    for q in queries:
+        try:
+            url = f"https://api.dailymotion.com/videos?search={urllib.parse.quote_plus(q)}&limit=5&fields=id,title,url,duration"
+            r = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=8)
+            if r.status_code == 200:
+                items = r.json().get("list", [])
+                candidates = []
+                for it in items:
+                    dur = it.get("duration", 0)
+                    if 20 <= dur <= 360:
+                        candidates.append(it)
+                if candidates:
+                    if is_hindi:
+                        candidates.sort(key=lambda x: "hindi" in x.get("title", "").lower(), reverse=True)
+                    best = candidates[0]
+                    print(f"  🎬 Found Dailymotion trailer: {best['title']} ({best['url']})")
+                    return best["url"]
+        except Exception as e:
+            pass
     return None
+
+def search_ddg_video_trailer(title, year, is_hindi=False):
+    """Searches DuckDuckGo Video (multi-platform: YouTube, Dailymotion, Vimeo) for official trailer."""
+    clean = re.sub(r'[\{\[\(].*?[\}\]\)]', '', title)
+    clean = re.split(r'\s+(?:Dual|Hindi|Audio|Movie|WEB-DL|HDRip|BluRay|HDTC|ESub)', clean, flags=re.IGNORECASE)[0].strip()
+    q = f"{clean} {year} hindi trailer" if (is_hindi and year) else (f"{clean} hindi trailer" if is_hindi else f"{clean} {year} official trailer")
+    try:
+        s = requests.Session()
+        s.headers.update({
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
+        })
+        res = s.get(f"https://duckduckgo.com/?q={urllib.parse.quote_plus(q)}", timeout=6)
+        m = re.search(r'vqd=[\'"]([0-9-]+)[\'"]', res.text)
+        vqd = m.group(1) if m else None
+        if not vqd:
+            m2 = re.search(r'vqd=([0-9-]+)&', res.text)
+            if m2: vqd = m2.group(1)
+        if vqd:
+            v_url = f"https://duckduckgo.com/v.js?l=us-en&o=json&q={urllib.parse.quote_plus(q)}&vqd={vqd}"
+            vr = s.get(v_url, timeout=6)
+            if vr.status_code == 200:
+                results = vr.json().get('results', [])
+                candidates = []
+                for v in results[:6]:
+                    url = v.get('content')
+                    v_title = v.get('title', '')
+                    if url and any(d in url for d in ['youtube.com', 'youtu.be', 'dailymotion.com', 'vimeo.com']):
+                        candidates.append({
+                            "url": url,
+                            "title": v_title,
+                            "is_hindi": "hindi" in v_title.lower()
+                        })
+                if candidates:
+                    if is_hindi:
+                        candidates.sort(key=lambda x: x["is_hindi"], reverse=True)
+                    best = candidates[0]
+                    print(f"  🎬 Found Multi-Platform trailer via DDG: {best['title']} ({best['url']})")
+                    return [c["url"] for c in candidates]
+    except Exception as e:
+        print(f"  ⚠️ Multi-platform video search notice: {e}")
+    return []
 
 def download_official_trailer(movie, target_path):
     """
-    Downloads the official HD trailer for the movie using Dailymotion and YouTube (via yt-dlp).
-    Bypasses datacenter bot blocks by prioritizing Dailymotion and supporting optional cookies.
-    Returns True if successful, False otherwise.
+    Downloads official HD trailer across multiple platforms:
+    1. Dailymotion (zero bot check, fast cloud CDN)
+    2. DuckDuckGo Multi-Platform Video Search (YouTube, Dailymotion, Vimeo)
+    3. Cinemeta / IMDb Trailer metadata
+    4. YouTube direct search with cloud-friendly player clients (tv_embedded, tv, web_embedded)
+    Strictly prioritizes Hindi Dubbed trailer for Hollywood and South Indian movies.
     """
     try:
         import yt_dlp
@@ -992,16 +1113,32 @@ def download_official_trailer(movie, target_path):
         return False
 
     title = movie.get("title", "")
+    raw_title = movie.get("raw_title", "")
     year = movie.get("year", "")
+    category = movie.get("category", "")
     trailer_key = movie.get("imdb", {}).get("trailer")
 
+    clean = re.sub(r'[\{\[\(].*?[\}\]\)]', '', title)
+    clean = re.split(r'\s+(?:Dual|Hindi|Audio|Movie|WEB-DL|HDRip|BluRay|HDTC|ESub)', clean, flags=re.IGNORECASE)[0].strip()
+
+    is_hollywood = "Hollywood" in category or any(w in raw_title.lower() for w in ["dual", "english", "hollywood"])
+    is_south = "South" in category or any(w in raw_title.lower() for w in ["south", "telugu", "tamil", "kannada", "malayalam"])
+    is_hindi_needed = is_hollywood or is_south
+
     ydl_opts = {
-        'format': 'best[height<=720][ext=mp4]/best[height<=720]/best[ext=mp4]/best',
+        'format': 'bestvideo[height<=720]+bestaudio/best[height<=720]/best',
+        'merge_output_format': 'mp4',
         'outtmpl': str(target_path),
-        'max_filesize': 80 * 1024 * 1024,
+        'max_filesize': 85 * 1024 * 1024,
         'noplaylist': True,
         'quiet': True,
         'no_warnings': True,
+        'extractor_args': {
+            'youtube': {
+                'player_client': ['tv_embedded', 'tv', 'web_embedded', 'web'],
+                'skip': ['dash', 'hls']
+            }
+        }
     }
 
     # Support optional YouTube cookies if passed via secret/file
@@ -1013,24 +1150,40 @@ def download_official_trailer(movie, target_path):
 
     sources = []
 
-    # 1. Dailymotion search (100% immune to YouTube's "Sign in to confirm you're not a bot" datacenter block)
-    dm_url = search_dailymotion_trailer(title, year)
+    # 1. Dailymotion search (100% immune to YouTube's datacenter bot block)
+    dm_url = search_dailymotion_trailer(clean, year, is_hindi=is_hindi_needed)
     if dm_url:
         sources.append(dm_url)
 
-    # 2. Cinemeta / IMDb trailer key
+    # 2. Multi-platform video search (DuckDuckGo / Bing Video)
+    ddg_urls = search_ddg_video_trailer(clean, year, is_hindi=is_hindi_needed)
+    if ddg_urls:
+        for u in ddg_urls:
+            if u not in sources:
+                sources.append(u)
+
+    # 3. Cinemeta / IMDb trailer key
     if trailer_key:
-        if str(trailer_key).startswith("http"):
-            sources.append(str(trailer_key))
-        else:
-            sources.append(f"https://www.youtube.com/watch?v={trailer_key}")
+        tk_str = str(trailer_key)
+        tk_url = tk_str if tk_str.startswith("http") else f"https://www.youtube.com/watch?v={tk_str}"
+        if tk_url not in sources:
+            sources.append(tk_url)
 
-    # 3. YouTube search queries: Hindi official trailer, then official trailer, then clean query
-    sources.append(f"ytsearch1:{title} {year} official trailer hindi")
-    sources.append(f"ytsearch1:{title} {year} official trailer")
-    sources.append(f"ytsearch1:{title} official trailer")
+    # 4. YouTube search queries: Hindi trailer first for Hollywood/South, then official trailer
+    if is_hindi_needed:
+        if year:
+            sources.append(f"ytsearch1:{clean} {year} official trailer hindi")
+        sources.append(f"ytsearch1:{clean} official trailer hindi dubbed")
+        sources.append(f"ytsearch1:{clean} official trailer hindi")
+        sources.append(f"ytsearch1:{clean} hindi trailer")
+    else:
+        if year:
+            sources.append(f"ytsearch1:{clean} {year} official trailer")
+        sources.append(f"ytsearch1:{clean} official trailer")
+        sources.append(f"ytsearch1:{clean} trailer")
 
-    print(f"  🎬 Searching & downloading official HD trailer for: {title} ({year})...")
+    lang_label = "Hindi Dubbed" if is_hindi_needed else "Official"
+    print(f"  🎬 Searching & downloading {lang_label} HD trailer for: {clean} ({year})...")
     for src in sources:
         try:
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -1043,7 +1196,7 @@ def download_official_trailer(movie, target_path):
                         break
             if found_file and found_file.stat().st_size > 100 * 1024:
                 size_mb = found_file.stat().st_size / (1024 * 1024)
-                print(f"  ✅ Official trailer downloaded successfully: {size_mb:.1f} MB")
+                print(f"  ✅ {lang_label} trailer downloaded successfully: {size_mb:.1f} MB (Source: {src[:50]})")
                 return True
         except Exception as e:
             print(f"  ⚠️ Trailer source attempt notice ({src[:45]}): {e}")
@@ -1054,15 +1207,21 @@ def download_official_trailer(movie, target_path):
 
 def format_trailer_caption(movie, main_post_link):
     title = movie.get("title", "Movie")
+    raw_title = movie.get("raw_title", "")
     year = movie.get("year", "2024")
+    category = movie.get("category", "HD Movie")
     imdb_data = movie.get("imdb", {})
     rating = imdb_data.get("rating", "7.5")
-    genres = imdb_data.get("genres") or movie.get("category", "HD Movie")
+    genres = imdb_data.get("genres") or category
     cast = ", ".join(imdb_data.get("cast", [])) if imdb_data.get("cast") else None
 
+    is_hollywood = "Hollywood" in category or any(w in raw_title.lower() for w in ["dual", "english", "hollywood"])
+    is_south = "South" in category or any(w in raw_title.lower() for w in ["south", "telugu", "tamil", "kannada", "malayalam"])
+    hdr_label = "Hindi Dubbed" if (is_hollywood or is_south) else "Official"
+
     caption = (
-        f"🎬 <b>Official HD Trailer: {title} ({year})</b>\n\n"
-        f"⭐ <b>IMDb:</b> ★ {rating}/10 | <b>Category:</b> {movie.get('category', 'HD Movie')}\n"
+        f"🎬 <b>{hdr_label} HD Trailer: {title} ({year})</b>\n\n"
+        f"⭐ <b>IMDb:</b> ★ {rating}/10 | <b>Category:</b> {category}\n"
         f"🎭 <b>Genres:</b> {genres}\n"
     )
     if cast:
@@ -1106,11 +1265,12 @@ async def post_official_trailer_to_promo(client, trailer_chat, main_chat, main_m
         caption = format_trailer_caption(movie, main_post_link)
         print(f"  📢 Posting official trailer to Promo Channel ({trailer_chat})...")
         
+        t_dur, t_w, t_h = get_video_metadata(found_trailer)
         trailer_attributes = [
             DocumentAttributeVideo(
-                duration=120,
-                w=1280,
-                h=720,
+                duration=t_dur if t_dur > 0 else 120,
+                w=t_w if t_w > 0 else 1280,
+                h=t_h if t_h > 0 else 720,
                 supports_streaming=True
             )
         ]
@@ -1324,7 +1484,14 @@ async def main():
 
             if not thumb_path and DEFAULT_THUMB.exists():
                 print("  ⚠️ All poster sources failed. Using default channel logo.")
-                thumb_path = str(DEFAULT_THUMB)
+                try:
+                    from PIL import Image
+                    img = Image.open(str(DEFAULT_THUMB)).convert('RGB')
+                    img.thumbnail((320, 320), Image.Resampling.LANCZOS)
+                    img.save(str(temp_thumb), 'JPEG', quality=85, optimize=True)
+                    thumb_path = str(temp_thumb)
+                except Exception:
+                    thumb_path = str(DEFAULT_THUMB)
 
             # 3. High-Speed Download with HTTP Error Check
             download_success = download_file(direct_url, temp_video)
