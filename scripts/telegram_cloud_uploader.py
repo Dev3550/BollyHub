@@ -931,10 +931,15 @@ def download_official_trailer(movie, target_path):
     trailer_key = movie.get("imdb", {}).get("trailer")
 
     ydl_opts = {
-        'format': 'bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/best[height<=720][ext=mp4]/best[height<=720]/best',
+        'format': 'best[ext=mp4]/best',
         'outtmpl': str(target_path),
         'max_filesize': 60 * 1024 * 1024,
         'noplaylist': True,
+        'extractor_args': {
+            'youtube': {
+                'player_client': ['android', 'ios']
+            }
+        },
         'quiet': True,
         'no_warnings': True,
     }
@@ -955,17 +960,21 @@ def download_official_trailer(movie, target_path):
         try:
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 ydl.download([src])
-            if target_path.exists() and target_path.stat().st_size > 100 * 1024:
-                size_mb = target_path.stat().st_size / (1024 * 1024)
+            found_file = target_path if target_path.exists() else None
+            if not found_file:
+                for alt in target_path.parent.glob(f"{target_path.stem}.*"):
+                    if alt.is_file() and alt.stat().st_size > 100 * 1024:
+                        found_file = alt
+                        break
+            if found_file and found_file.stat().st_size > 100 * 1024:
+                size_mb = found_file.stat().st_size / (1024 * 1024)
                 print(f"  ✅ Official trailer downloaded successfully: {size_mb:.1f} MB")
                 return True
         except Exception as e:
             print(f"  ⚠️ Trailer source attempt notice ({src[:45]}): {e}")
-            if target_path.exists():
-                try:
-                    target_path.unlink()
-                except Exception:
-                    pass
+            for alt in target_path.parent.glob(f"{target_path.stem}.*"):
+                try: alt.unlink()
+                except Exception: pass
     return False
 
 def format_trailer_caption(movie, main_post_link):
@@ -1008,7 +1017,14 @@ async def post_official_trailer_to_promo(client, trailer_chat, main_chat, main_m
             main_post_link = CHANNEL_LINK
 
         success = download_official_trailer(movie, temp_trailer)
-        if not success or not temp_trailer.exists():
+        found_trailer = temp_trailer if temp_trailer.exists() else None
+        if not found_trailer:
+            for alt in temp_trailer.parent.glob(f"{temp_trailer.stem}.*"):
+                if alt.is_file() and alt.stat().st_size > 100 * 1024:
+                    found_trailer = alt
+                    break
+
+        if not success or not found_trailer:
             print(f"  ⚠️ Could not obtain official trailer for {movie['title']}. Skipping promo post.")
             return None
 
@@ -1024,7 +1040,7 @@ async def post_official_trailer_to_promo(client, trailer_chat, main_chat, main_m
             )
         ]
 
-        trailer_input = await fast_upload_file(client, str(temp_trailer), max_workers=2)
+        trailer_input = await fast_upload_file(client, str(found_trailer), max_workers=2)
         promo_msg = await client.send_file(
             trailer_chat,
             trailer_input,
@@ -1040,11 +1056,9 @@ async def post_official_trailer_to_promo(client, trailer_chat, main_chat, main_m
         print(f"  ⚠️ Failed to post official trailer to promo channel: {e}")
         return None
     finally:
-        if temp_trailer.exists():
-            try:
-                temp_trailer.unlink()
-            except Exception:
-                pass
+        for alt in temp_trailer.parent.glob(f"{temp_trailer.stem}.*"):
+            try: alt.unlink()
+            except Exception: pass
 
 async def main():
     parser = argparse.ArgumentParser(description="BollyHub Telegram Cloud Movie Uploader")
