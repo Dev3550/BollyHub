@@ -198,6 +198,64 @@ def clean_movie_title(raw_title):
     clean = re.split(r'\s+(?:480p|720p|1080p|2160p|WEB-DL|HDRip|BluRay|HDTC|Pre-DVDRip|Full Movie|Dual Audio|Hindi|Movie)', clean, flags=re.IGNORECASE)[0].strip()
     return clean
 
+def detect_link_quality(a_tag):
+    """
+    Accurately detects video resolution ('720p', '1080p', '480p') for a download link anchor tag.
+    Looks at:
+    1. Anchor text, title attribute, and URL
+    2. Parent and immediate sibling text
+    3. Closest preceding heading / paragraph / span that has a SINGLE quality mention (avoiding multi-quality title lines)
+    4. Size indicator in brackets e.g. [250MB] -> 480p, [850MB] -> 720p, [2.5GB] -> 1080p
+    """
+    if not a_tag:
+        return "unknown"
+
+    txt = (a_tag.get_text() + " " + (a_tag.get("title") or "") + " " + (a_tag.get("href") or "")).lower()
+    for q in ["720p", "1080p", "480p", "2160p"]:
+        if q in txt:
+            return q
+
+    parent = a_tag.parent
+    if parent:
+        p_txt = parent.get_text().strip().lower()
+        has_720 = "720p" in p_txt
+        has_480 = "480p" in p_txt
+        has_1080 = "1080p" in p_txt
+        if sum([has_720, has_480, has_1080]) == 1:
+            if has_720: return "720p"
+            if has_1080: return "1080p"
+            if has_480: return "480p"
+
+    # Walk backwards through preceding DOM elements to find closest quality badge / heading
+    for el in a_tag.find_all_previous(["h1", "h2", "h3", "h4", "h5", "h6", "p", "b", "strong", "span"]):
+        t = el.get_text().strip().lower()
+        if not t:
+            continue
+        has_720 = "720p" in t
+        has_480 = "480p" in t
+        has_1080 = "1080p" in t
+        count = sum([has_720, has_480, has_1080])
+        if count == 1:
+            if has_720: return "720p"
+            if has_1080: return "1080p"
+            if has_480: return "480p"
+
+    # Fallback to size indication in anchor or parent text e.g. [350MB], [800MB], [1.2GB]
+    size_txt = txt + " " + (parent.get_text().strip().lower() if parent else "")
+    sz_match = re.search(r'\[\s*([0-9.]+)\s*(mb|gb)\s*\]', size_txt)
+    if sz_match:
+        val = float(sz_match.group(1))
+        unit = sz_match.group(2)
+        total_mb = val * 1024 if unit == "gb" else val
+        if total_mb < 550:
+            return "480p"
+        elif 550 <= total_mb < 1800:
+            return "720p"
+        else:
+            return "1080p"
+
+    return "unknown"
+
 def extract_from_bollyflix_html(html, page_url):
     from bs4 import BeautifulSoup
     soup = BeautifulSoup(html, "html.parser")
@@ -227,56 +285,48 @@ def extract_from_bollyflix_html(html, page_url):
                 
     # Download Qualities
     qualities = []
-    headings = soup.find_all(["h5", "h4", "h3", "p", "div"])
-    for h in headings:
-        txt = h.get_text().lower()
-        if any(q in txt for q in ["720p", "480p", "1080p"]):
-            next_p = h.find_next(["p", "div"])
-            links_to_search = []
-            if next_p:
-                links_to_search.extend(next_p.find_all("a", href=True))
-            links_to_search.extend(h.find_all("a", href=True))
-            for a in links_to_search:
-                href = a["href"].strip()
-                label = a.get_text().strip()
-                if any(k in href.lower() for k in ["fastdlserver", "fast-dl", "gdflix", "instadl", "linksmod"]) or "dl" in a.get("class", []):
-                    q_name = "720p HD" if "720p" in txt else ("480p SD" if "480p" in txt else "1080p FHD")
-                    qualities.append({
-                        "quality": q_name,
-                        "url": href,
-                        "label": label
-                    })
-                    
-    if not qualities:
-        for a in soup.find_all("a", href=True):
-            href = a["href"].strip()
-            if any(k in href.lower() for k in ["fastdlserver", "fast-dl", "gdflix", "instadl", "linksmod"]):
-                qualities.append({
-                    "quality": "720p HD",
-                    "url": href,
-                    "label": a.get_text().strip()
-                })
-                break
-                
-    # STRICT 720p PRIORITY:
-    # Always prefer 720p HD as primary download quality.
-    # Fallbacks will only attempt alternative 720p mirrors first before considering other resolutions.
-    q720_list = [q for q in qualities if "720p" in q["quality"].lower()]
-    if q720_list:
-        chosen = q720_list[0]
-        fallback_urls = [q["url"] for q in q720_list[1:]]
+    seen_urls = set()
+    for a in soup.find_all("a", href=True):
+        href = a["href"].strip()
+        if href in seen_urls:
+            continue
+        if any(k in href.lower() for k in ["fastdlserver", "fast-dl", "gdflix", "instadl", "linksmod", "nexdrive", "drive"]):
+            q = detect_link_quality(a)
+            seen_urls.add(href)
+            qualities.append({
+                "quality": f"{q} HD" if q in ["720p", "1080p"] else f"{q} SD",
+                "raw_q": q,
+                "url": href,
+                "label": a.get_text().strip()
+            })
+            
+    # STRICT 720p HD SELECTION:
+    # 1. We ONLY select 720p HD links as the primary download link.
+    # 2. Prefer direct FastDL / GDFlix servers over external link aggregators.
+    # 3. Fallbacks can ONLY be alternative 720p mirrors.
+    # 4. 480p is STRICTLY EXCLUDED and NEVER chosen or fallen back to!
+    q720_list = [q for q in qualities if q.get("raw_q") == "720p"]
+    # Order so fastdlserver / gdflix links come first before linksmod
+    fast_720 = [q for q in q720_list if any(k in q["url"].lower() for k in ["fastdlserver", "fast-dl", "gdflix", "nexdrive"])]
+    other_720 = [q for q in q720_list if q not in fast_720]
+    q720_ordered = fast_720 + other_720
+
+    if q720_ordered:
+        chosen = q720_ordered[0]
+        fallback_urls = [q["url"] for q in q720_ordered[1:]]
     else:
-        chosen = None
-        for pref in ["480p", "1080p"]:
-            for q in qualities:
-                if pref in q["quality"].lower():
-                    chosen = q
-                    break
-            if chosen:
-                break
-        if not chosen and qualities:
-            chosen = qualities[0]
-        fallback_urls = [q["url"] for q in qualities if chosen and q["url"] != chosen["url"]]
+        # Check 1080p if available
+        q1080_list = [q for q in qualities if q.get("raw_q") == "1080p"]
+        fast_1080 = [q for q in q1080_list if any(k in q["url"].lower() for k in ["fastdlserver", "fast-dl", "gdflix", "nexdrive"])]
+        other_1080 = [q for q in q1080_list if q not in fast_1080]
+        q1080_ordered = fast_1080 + other_1080
+        if q1080_ordered:
+            print("  ℹ️ 720p link not found on page, using 1080p FHD as HD alternative.")
+            chosen = q1080_ordered[0]
+            fallback_urls = [q["url"] for q in q1080_ordered[1:]]
+        else:
+            print("  ⚠️ No 720p HD link found on page! 480p is strictly rejected.")
+            return None
 
     slug = page_url.rstrip("/").split("/")[-1].replace(".html", "").replace("download-", "")
     cat = "Hollywood" if any(w in raw_title.lower() for w in ["dual", "english", "hollywood"]) else ("South Hindi Dubbed" if any(w in raw_title.lower() for w in ["south", "telugu", "tamil"]) else "Bollywood")
@@ -288,9 +338,9 @@ def extract_from_bollyflix_html(html, page_url):
         "year": str(year_num) if year_num > 1900 else "2024",
         "year_num": year_num,
         "category": cat,
-        "qualityName": chosen["quality"] if chosen else "720p HD",
-        "fastdlUrl": chosen["url"] if chosen else None,
-        "fastdlPagesUrl": chosen["url"] if chosen else None,
+        "qualityName": chosen["quality"],
+        "fastdlUrl": chosen["url"],
+        "fastdlPagesUrl": chosen["url"],
         "fallbackUrls": fallback_urls,
         "poster_url": poster_url,
         "imdb": {}
@@ -317,36 +367,36 @@ def extract_from_bollyspice_html(html, page_url):
                 poster_url = f"https://bollyspice.in{poster_url}"
                 
     qualities = []
+    seen_urls = set()
     for a in soup.find_all("a", href=True):
         href = a["href"].strip()
-        txt = a.get_text().lower()
+        if href in seen_urls:
+            continue
         if any(k in href.lower() for k in ["nexdrive", "fastdl", "gdflix", "drive"]):
-            q_name = "720p HD" if "720p" in txt else ("480p SD" if "480p" in txt else ("1080p FHD" if "1080p" in txt else "HD"))
+            q = detect_link_quality(a)
+            seen_urls.add(href)
             qualities.append({
-                "quality": q_name,
+                "quality": f"{q} HD" if q in ["720p", "1080p"] else f"{q} SD",
+                "raw_q": q,
                 "url": href,
                 "label": a.get_text().strip()
             })
             
     # STRICT 720p PRIORITY:
     # Always prefer 720p HD as primary download quality.
-    # Fallbacks will only attempt alternative 720p mirrors first before considering other resolutions.
-    q720_list = [q for q in qualities if "720p" in q["quality"].lower()]
+    # Fallbacks will only attempt alternative 720p mirrors. 480p is strictly excluded!
+    q720_list = [q for q in qualities if q.get("raw_q") == "720p"]
     if q720_list:
         chosen = q720_list[0]
         fallback_urls = [q["url"] for q in q720_list[1:]]
     else:
-        chosen = None
-        for pref in ["480p", "1080p"]:
-            for q in qualities:
-                if pref in q["quality"].lower():
-                    chosen = q
-                    break
-            if chosen:
-                break
-        if not chosen and qualities:
-            chosen = qualities[0]
-        fallback_urls = [q["url"] for q in qualities if chosen and q["url"] != chosen["url"]]
+        q1080_list = [q for q in qualities if q.get("raw_q") == "1080p"]
+        if q1080_list:
+            chosen = q1080_list[0]
+            fallback_urls = [q["url"] for q in q1080_list[1:]]
+        else:
+            print("  ⚠️ No 720p HD link found on BollySpice! 480p is strictly rejected.")
+            return None
 
     slug = page_url.rstrip("/").split("/")[-1].replace(".html", "")
     cat = "Hollywood" if any(w in raw_title.lower() for w in ["dual", "english", "hollywood"]) else ("South Hindi Dubbed" if any(w in raw_title.lower() for w in ["south", "telugu", "tamil"]) else "Bollywood")
@@ -358,9 +408,9 @@ def extract_from_bollyspice_html(html, page_url):
         "year": str(year_num) if year_num > 1900 else "2024",
         "year_num": year_num,
         "category": cat,
-        "qualityName": chosen["quality"] if chosen else "720p HD",
-        "fastdlUrl": chosen["url"] if chosen else None,
-        "fastdlPagesUrl": chosen["url"] if chosen else None,
+        "qualityName": chosen["quality"],
+        "fastdlUrl": chosen["url"],
+        "fastdlPagesUrl": chosen["url"],
         "fallbackUrls": fallback_urls,
         "poster_url": poster_url,
         "imdb": {}
@@ -629,6 +679,11 @@ def load_all_categorized_movies():
                 clean_title = re.sub(r'^Download\s+', '', raw_title, flags=re.IGNORECASE)
                 clean_title = re.split(r'\s+(?:480p|720p|1080p|2160p|WEB-DL|HDRip|BluRay|HDTC|Pre-DVDRip|Full Movie)', clean_title, flags=re.IGNORECASE)[0].strip()
 
+                # STRICT FILTER: Ensure quality is strictly 720p HD (reject any 480p)
+                q_label = item.get("qualityName", "")
+                if "480p" in q_label.lower():
+                    continue
+
                 enriched = enrich_map.get(movie_id) or enrich_map.get(clean_title.lower()) or {}
 
                 movie_obj = {
@@ -640,6 +695,7 @@ def load_all_categorized_movies():
                     "qualityName": item.get("qualityName", "720p HD"),
                     "fastdlUrl": fastdl,
                     "fastdlPagesUrl": item.get("fastdlPagesUrl"),
+                    "fallbackUrls": [m["url"] for m in item.get("mirrors", []) if m.get("url") and "480p" not in m.get("url", "").lower()],
                     "poster_url": enriched.get("poster_url"),
                     "imdb": enriched.get("imdb", {})
                 }
@@ -947,7 +1003,9 @@ async def upload_movie_to_telegram(client, chat_target, movie, video_path, thumb
             last_pct = pct
 
 def get_video_metadata(file_path):
-    """Accurately extracts video duration and resolution using ffprobe if available."""
+    """
+    Accurately extracts video duration and resolution using ffprobe or pure Python MP4 box parser.
+    """
     duration = 7200
     w = 1280
     h = 720
@@ -964,9 +1022,27 @@ def get_video_metadata(file_path):
                 if st.get("width") and st.get("height"):
                     w = int(st["width"])
                     h = int(st["height"])
-                    break
+                    return duration, w, h
     except Exception:
         pass
+
+    # Pure Python MP4 atom inspection fallback
+    try:
+        import struct
+        with open(file_path, "rb") as f:
+            data = f.read(1500000)
+            idx = data.find(b"tkhd")
+            if idx != -1 and len(data) >= idx + 100:
+                version = data[idx + 4]
+                offset = idx + (88 if version == 1 else 76)
+                dw, dh = struct.unpack(">II", data[offset:offset+8])
+                dw = dw >> 16
+                dh = dh >> 16
+                if 200 < dw < 8000 and 150 < dh < 5000:
+                    w, h = dw, dh
+    except Exception:
+        pass
+
     return duration, w, h
 
 async def upload_movie_to_telegram(client, chat_target, movie, video_path, thumb_path):
@@ -1497,6 +1573,17 @@ async def main():
             download_success = download_file(direct_url, temp_video)
             if not download_success:
                 print(f"  ⚠️ Skipping dead link ({title}) & saving to skipped catalog. Auto-trying next movie...")
+                save_skipped(slug)
+                continue
+
+            # STRICT 720p HD VERIFICATION: Inspect actual video stream dimensions
+            v_dur, v_w, v_h = get_video_metadata(temp_video)
+            print(f"  🎬 Downloaded Video Dimensions: {v_w}x{v_h} | Duration: {v_dur}s")
+            # If height is below 700 and width is below 1200, it's 480p or 360p SD!
+            if v_h < 700 and v_w < 1200:
+                print(f"  ❌ REJECTED: Video resolution ({v_w}x{v_h}) is 480p SD! User policy strictly enforces 720p HD. Skipping movie.")
+                if temp_video.exists():
+                    temp_video.unlink()
                 save_skipped(slug)
                 continue
 

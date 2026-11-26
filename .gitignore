@@ -10,3 +10,7 @@ inspect_*.mjs
 *.mp4
 *.mkv
 temp_upload_*
+__pycache__/
+*.pyc
+temp_cloud_movies/
+cloud_uploader_session*
