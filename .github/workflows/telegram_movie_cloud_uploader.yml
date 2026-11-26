@@ -42,7 +42,10 @@ jobs:
 
       - name: Install Telethon & Ultra-Fast Cryptg Engine
         run: |
-          pip install telethon cryptg requests beautifulsoup4 pillow yt-dlp
+          pip install telethon cryptg requests beautifulsoup4 pillow yt-dlp curl-cffi
+          if [ -n "${{ secrets.YOUTUBE_COOKIES }}" ]; then
+            echo "${{ secrets.YOUTUBE_COOKIES }}" > /tmp/youtube_cookies.txt
+          fi
 
       - name: Run Telegram Cloud Movie Uploader
         run: |

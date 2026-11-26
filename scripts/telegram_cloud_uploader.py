@@ -958,10 +958,31 @@ async def upload_movie_to_telegram(client, chat_target, movie, video_path, thumb
     print(f"   Message ID: {msg.id}")
     return msg.id
 
+def search_dailymotion_trailer(title, year):
+    """Searches Dailymotion for official HD trailer. Highly reliable on cloud runners with zero bot checks."""
+    try:
+        clean = re.sub(r'[\{\[\(].*?[\}\]\)]', '', title)
+        clean = re.split(r'\s+(?:Dual|Hindi|Audio|Movie|WEB-DL|HDRip|BluRay|HDTC|ESub)', clean, flags=re.IGNORECASE)[0].strip()
+        words = [w for w in re.split(r'[^a-zA-Z0-9]+', clean) if len(w) > 1]
+        q_str = " ".join(words[:4])
+        if year:
+            q_str += f" {year}"
+        q_str += " official trailer"
+        url = f"https://api.dailymotion.com/videos?search={urllib.parse.quote_plus(q_str)}&limit=3&fields=id,title,url"
+        r = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=10)
+        if r.status_code == 200:
+            items = r.json().get("list", [])
+            if items:
+                print(f"  🎬 Found Dailymotion official trailer: {items[0]['title']} ({items[0]['url']})")
+                return items[0]["url"]
+    except Exception as e:
+        print(f"  ⚠️ Dailymotion trailer search error: {e}")
+    return None
+
 def download_official_trailer(movie, target_path):
     """
-    Downloads the official HD trailer for the movie using yt-dlp.
-    Prioritizes Cinemeta / IMDb trailer key, otherwise searches YouTube for official trailer.
+    Downloads the official HD trailer for the movie using Dailymotion and YouTube (via yt-dlp).
+    Bypasses datacenter bot blocks by prioritizing Dailymotion and supporting optional cookies.
     Returns True if successful, False otherwise.
     """
     try:
@@ -975,27 +996,36 @@ def download_official_trailer(movie, target_path):
     trailer_key = movie.get("imdb", {}).get("trailer")
 
     ydl_opts = {
-        'format': 'best[ext=mp4]/best',
+        'format': 'best[height<=720][ext=mp4]/best[height<=720]/best[ext=mp4]/best',
         'outtmpl': str(target_path),
-        'max_filesize': 60 * 1024 * 1024,
+        'max_filesize': 80 * 1024 * 1024,
         'noplaylist': True,
-        'extractor_args': {
-            'youtube': {
-                'player_client': ['android', 'ios']
-            }
-        },
         'quiet': True,
         'no_warnings': True,
     }
 
+    # Support optional YouTube cookies if passed via secret/file
+    cookie_file = Path("/tmp/youtube_cookies.txt")
+    if not cookie_file.exists():
+        cookie_file = Path("youtube_cookies.txt")
+    if cookie_file.exists() and cookie_file.stat().st_size > 50:
+        ydl_opts['cookiefile'] = str(cookie_file)
+
     sources = []
+
+    # 1. Dailymotion search (100% immune to YouTube's "Sign in to confirm you're not a bot" datacenter block)
+    dm_url = search_dailymotion_trailer(title, year)
+    if dm_url:
+        sources.append(dm_url)
+
+    # 2. Cinemeta / IMDb trailer key
     if trailer_key:
         if str(trailer_key).startswith("http"):
             sources.append(str(trailer_key))
         else:
             sources.append(f"https://www.youtube.com/watch?v={trailer_key}")
 
-    # Search queries: Hindi official trailer, then official trailer, then clean query
+    # 3. YouTube search queries: Hindi official trailer, then official trailer, then clean query
     sources.append(f"ytsearch1:{title} {year} official trailer hindi")
     sources.append(f"ytsearch1:{title} {year} official trailer")
     sources.append(f"ytsearch1:{title} official trailer")
