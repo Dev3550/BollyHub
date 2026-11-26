@@ -18,6 +18,7 @@ import argparse
 import asyncio
 from pathlib import Path
 import requests
+import urllib.parse
 
 # Try importing Telethon
 try:
@@ -57,10 +58,9 @@ SKIPPED_FILE = DATA_DIR / "telegram_cloud_skipped.json"
 DEFAULT_THUMB = DATA_DIR / "default_thumb.jpg"
 
 BROWSER_HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-    "Accept": "*/*",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
     "Accept-Language": "en-US,en;q=0.9",
-    "Accept-Encoding": "identity",
     "Connection": "keep-alive"
 }
 
@@ -269,6 +269,8 @@ def extract_from_bollyflix_html(html, page_url):
     if not chosen and qualities:
         chosen = qualities[0]
         
+    fallback_urls = [q["url"] for q in qualities if chosen and q["url"] != chosen["url"]]
+
     slug = page_url.rstrip("/").split("/")[-1].replace(".html", "").replace("download-", "")
     cat = "Hollywood" if any(w in raw_title.lower() for w in ["dual", "english", "hollywood"]) else ("South Hindi Dubbed" if any(w in raw_title.lower() for w in ["south", "telugu", "tamil"]) else "Bollywood")
 
@@ -282,6 +284,7 @@ def extract_from_bollyflix_html(html, page_url):
         "qualityName": chosen["quality"] if chosen else "720p HD",
         "fastdlUrl": chosen["url"] if chosen else None,
         "fastdlPagesUrl": chosen["url"] if chosen else None,
+        "fallbackUrls": fallback_urls,
         "poster_url": poster_url,
         "imdb": {}
     }
@@ -329,6 +332,8 @@ def extract_from_bollyspice_html(html, page_url):
     if not chosen and qualities:
         chosen = qualities[0]
         
+    fallback_urls = [q["url"] for q in qualities if chosen and q["url"] != chosen["url"]]
+
     slug = page_url.rstrip("/").split("/")[-1].replace(".html", "")
     cat = "Hollywood" if any(w in raw_title.lower() for w in ["dual", "english", "hollywood"]) else ("South Hindi Dubbed" if any(w in raw_title.lower() for w in ["south", "telugu", "tamil"]) else "Bollywood")
 
@@ -342,6 +347,7 @@ def extract_from_bollyspice_html(html, page_url):
         "qualityName": chosen["quality"] if chosen else "720p HD",
         "fastdlUrl": chosen["url"] if chosen else None,
         "fastdlPagesUrl": chosen["url"] if chosen else None,
+        "fallbackUrls": fallback_urls,
         "poster_url": poster_url,
         "imdb": {}
     }
@@ -631,34 +637,38 @@ def load_all_categorized_movies():
 
     return categories
 
-def resolve_direct_link(start_url):
-    """Follows fastdl / instadl / nexdrive / gdflix redirects to get direct Google CDN download link."""
-    if not start_url:
-        return None
-        
-    # If already a Google CDN direct URL
-    if "googleusercontent.com" in start_url:
-        return start_url
-        
-    # If fastdl-one.pages.dev wrapper, unwrap the inner URL
-    if "fastdl-one.pages.dev" in start_url and "url=" in start_url:
-        import urllib.parse
-        parsed = urllib.parse.urlparse(start_url)
-        params = urllib.parse.parse_qs(parsed.query)
-        if "url" in params and params["url"]:
-            start_url = params["url"][0]
-
+def resolve_single_chain(start_url, session):
+    """
+    Follows redirects through fastdl, gdflix, instadl, and pages.dev to obtain direct Google CDN URL.
+    Uses requests.Session to maintain cookies across Cloudflare-protected domains.
+    """
     curr = start_url
-    for _ in range(8):
+    for hop in range(8):
         try:
-            res = requests.get(curr, headers={**BROWSER_HEADERS, "Referer": curr}, allow_redirects=False, timeout=12)
+            res = session.get(curr, headers={**BROWSER_HEADERS, "Referer": curr}, allow_redirects=False, timeout=20)
+            
             if res.status_code in (301, 302, 307, 308):
                 loc = res.headers.get("Location")
                 if not loc:
                     break
-                curr = loc if loc.startswith("http") else requests.compat.urljoin(curr, loc)
-                if "googleusercontent.com" in curr:
-                    return curr
+                loc_clean = loc if loc.startswith("http") else requests.compat.urljoin(curr, loc)
+                
+                # Check for fastdl-one.pages.dev query wrapper: ?url=https://...
+                if "url=" in loc_clean:
+                    parsed = urllib.parse.urlparse(loc_clean)
+                    params = urllib.parse.parse_qs(parsed.query)
+                    if "url" in params and params["url"]:
+                        unwrapped = params["url"][0]
+                        if "googleusercontent.com" in unwrapped:
+                            return unwrapped
+                        curr = unwrapped
+                        continue
+                        
+                if "googleusercontent.com" in loc_clean:
+                    return loc_clean
+                curr = loc_clean
+                continue
+                
             elif res.status_code == 200:
                 html = res.text
                 if "googleusercontent.com" in html:
@@ -666,42 +676,76 @@ def resolve_direct_link(start_url):
                     if m:
                         return m.group(0)
                         
-                match = re.search(r'href=[\'"]([^\'"]*(?:Instant DL|instadl\.rest)[^\'"]*)[\'"]', html, re.IGNORECASE)
-                if not match:
-                    match = re.search(r'href=[\'"](https?://[^\'"]*instadl\.rest[^\'"]*)[\'"]', html)
-                if not match:
-                    match = re.search(r'href=[\'"](https?://[^\'"]*(?:fastdlserver|fast-dl\.one|gdflix|googleusercontent)[^\'"]*)[\'"]', html, re.IGNORECASE)
-                if not match:
-                    match = re.search(r'<a[^>]+href=[\'"]([^\'"]+)[\'"][^>]*>(?:[^<]*(?:Instant|Direct|Fast Cloud|High Speed|Download)[^<]*)</a>', html, re.IGNORECASE)
-                
-                if not match:
-                    return None
-                    
-                found_link = match.group(1)
-                if "googleusercontent.com" in found_link:
-                    return found_link
-                    
-                dl_res = requests.get(found_link, headers={**BROWSER_HEADERS, "Referer": curr}, allow_redirects=False, timeout=12)
-                dl_loc = dl_res.headers.get("Location")
-                if dl_loc:
-                    if "url=" in dl_loc:
-                        import urllib.parse
-                        parsed = urllib.parse.urlparse(dl_loc)
-                        params = urllib.parse.parse_qs(parsed.query)
-                        if "url" in params and params["url"]:
-                            extracted = params["url"][0]
-                            if "googleusercontent.com" in extracted:
-                                return extracted
-                            curr = extracted
-                            continue
-                    if "googleusercontent.com" in dl_loc:
-                        return dl_loc
-                    curr = dl_loc if dl_loc.startswith("http") else requests.compat.urljoin(found_link, dl_loc)
+                # Match InstaDL direct button/link
+                match = re.search(r'href=[\'"]([^\'"]*instadl\.rest[^\'"]*)[\'"]', html)
+                if match:
+                    inst_url = match.group(1)
+                    dl_res = session.get(inst_url, headers={**BROWSER_HEADERS, "Referer": curr}, allow_redirects=False, timeout=20)
+                    dl_loc = dl_res.headers.get("Location")
+                    if dl_loc:
+                        if "url=" in dl_loc:
+                            parsed = urllib.parse.urlparse(dl_loc)
+                            params = urllib.parse.parse_qs(parsed.query)
+                            if "url" in params and params["url"]:
+                                unwrapped = params["url"][0]
+                                if "googleusercontent.com" in unwrapped:
+                                    return unwrapped
+                                curr = unwrapped
+                                continue
+                        if "googleusercontent.com" in dl_loc:
+                            return dl_loc
+                        curr = dl_loc if dl_loc.startswith("http") else requests.compat.urljoin(inst_url, dl_loc)
+                        continue
+                        
+                # Generic download button
+                btn_match = re.search(r'<a[^>]+href=[\'"]([^\'"]+)[\'"][^>]*>(?:[^<]*(?:Instant|Direct|Fast Cloud|Download)[^<]*)</a>', html, re.IGNORECASE)
+                if btn_match:
+                    btn_link = btn_match.group(1)
+                    if not btn_link.startswith("http"):
+                        btn_link = requests.compat.urljoin(curr, btn_link)
+                    curr = btn_link
                     continue
-                return None
+                break
+            else:
+                break
         except Exception as e:
-            print(f"  ⚠️ Redirect resolve error: {e}")
+            print(f"      ⚠️ Hop error on {curr[:45]}: {e}")
             break
+    return None
+
+def resolve_direct_link(start_url):
+    """
+    Robust multi-path resolver with Session cookie handling and active mirror fallbacks.
+    """
+    if not start_url:
+        return None
+        
+    if "googleusercontent.com" in start_url:
+        return start_url
+
+    session = requests.Session()
+    # Path A: Try primary start URL chain
+    direct = resolve_single_chain(start_url, session)
+    if direct:
+        return direct
+
+    # Path B: Fallback via active GDFlix mirror domains if primary wrapper/domain failed
+    file_id = ""
+    if "id=" in start_url:
+        m = re.search(r'id=([a-zA-Z0-9%=-]+)', start_url)
+        if m: file_id = m.group(1)
+    elif "/file/" in start_url:
+        m = re.search(r'/file/([a-zA-Z0-9%=-]+)', start_url)
+        if m: file_id = m.group(1)
+
+    if file_id:
+        fallback_domains = ["https://new10.gdflix.io", "https://gdflix.dev"]
+        for domain in fallback_domains:
+            fallback_url = f"{domain}/file/{file_id}"
+            direct = resolve_single_chain(fallback_url, session)
+            if direct:
+                return direct
+
     return None
 
 def download_file(url, target_path):
@@ -951,9 +995,10 @@ def download_official_trailer(movie, target_path):
         else:
             sources.append(f"https://www.youtube.com/watch?v={trailer_key}")
 
-    # Search queries: Hindi official trailer, then official trailer
+    # Search queries: Hindi official trailer, then official trailer, then clean query
     sources.append(f"ytsearch1:{title} {year} official trailer hindi")
     sources.append(f"ytsearch1:{title} {year} official trailer")
+    sources.append(f"ytsearch1:{title} official trailer")
 
     print(f"  🎬 Searching & downloading official HD trailer for: {title} ({year})...")
     for src in sources:
@@ -1196,6 +1241,7 @@ async def main():
                 if live_meta.get("cast"): movie_imdb["cast"] = live_meta["cast"]
                 if live_meta.get("summary"): movie_imdb["summary"] = live_meta["summary"]
                 if live_meta.get("background_url"): movie_imdb["background_url"] = live_meta["background_url"]
+                if live_meta.get("trailer"): movie_imdb["trailer"] = live_meta["trailer"]
 
         # Fallback to authentic source website cover from bollyspice.in
         if not movie.get("poster_url"):
@@ -1208,6 +1254,13 @@ async def main():
         direct_url = resolve_direct_link(fastdl_url)
         if not direct_url and movie.get("fastdlPagesUrl") and movie["fastdlPagesUrl"] != fastdl_url:
             direct_url = resolve_direct_link(movie["fastdlPagesUrl"])
+
+        if not direct_url and movie.get("fallbackUrls"):
+            for fb_url in movie["fallbackUrls"]:
+                print(f"  🔄 Trying alternative quality link: {fb_url[:65]}...")
+                direct_url = resolve_direct_link(fb_url)
+                if direct_url:
+                    break
 
         if not direct_url:
             print(f"  ❌ CDN direct link could not be resolved. Marking as broken & auto-trying next movie...")
